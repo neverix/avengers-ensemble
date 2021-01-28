@@ -136,7 +136,7 @@ def read_danetqa(split):
     return read_data(f"DaNetQA/{split}", preprocess_danetqa)
 
 
-def preprocess_rucos(data, nli=False):
+def preprocess_rucos(data, nli=False, single=True, interpolate=True):
     idx = 0
     for sample in data:
         entities = sample.passage["entities"]
@@ -154,20 +154,27 @@ def preprocess_rucos(data, nli=False):
         sample.misc["qas"] = sample.pop("qas")
         for query in qas:
             question = query["query"]
-            answer = query["answers"][0]["text"] if "answers" in query else None
+            answers = set(answer["text"] for answer in query["answers"]) if "answers" in query else ['' if nli else candidates[0]]
             if nli:
                 for candidate in candidates:
-                    line = question.replace("@placeholder", candidate)
+                    if interpolate:
+                        line = question.replace("@placeholder", candidate)
+                    else:
+                        line = question
+                        sample.answer = candidate
                     sample.hypothesis = line
-                    sample.label = int(candidate == answer)
+                    sample.label = int(candidate in answers)
                     yield idx, sample
                     idx += 1
             else:
-                sample.candidates = candidates
-                sample.question = question
-                sample.answer = answer
-                yield idx, sample
-                idx += 1
+                if single:
+                    answers = [next(iter(answers))]
+                for answer in answers:
+                    sample.candidates = candidates
+                    sample.question = question
+                    sample.answer = answer
+                    yield idx, sample
+                    idx += 1
 
 
 def read_rucos_nli(split):
