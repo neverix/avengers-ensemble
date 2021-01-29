@@ -1,6 +1,6 @@
 import utils
 from functools import partial
-import copy
+import re
 
 
 def read_jsonl(fn):
@@ -44,7 +44,7 @@ def preprocess_parus(data, nli=True):
                 hypothesis=sample.choice2,
                 label=int(sample.label == 1)
             )
-            for idx, val in [first, second]:
+            for idx, val in (first, second):
                 if sample.question == "cause":
                     val.premise, val.hypothesis = val.hypothesis, val.premise
                 val.type = sample.type
@@ -70,7 +70,7 @@ def preprocess_rcb(data):
             if key not in ["idx", "premise", "hypothesis", "label"]:
                 misc[key] = sample.pop(key)
         sample.misc = misc
-        sample.label = ["contradiction", "neutral", "entailment"].index(sample.label) if "label" in sample else 0
+        sample.label = ("contradiction", "neutral", "entailment").index(sample.label) if "label" in sample else 0
         yield sample.idx, sample
 
 
@@ -198,17 +198,44 @@ trans_table = dict([(ord(x), ord(y)) for x, y in zip("‘’´“”«»–-", "
 
 
 def repl_quotes(string):
-    return string.strip().translate(trans_table).strip()
+    return string.translate(trans_table)
+
+
+def repl_lines(string):
+    return string.replace('\n', ' ')
+
+
+def remove_highlight(string):
+    return string.replace('@highlight', '')
+
+
+numbers_re = re.compile(r"\(.?\d\d?.?\)")
+
+
+def strip_numbers(text):
+    matches = re.findall(numbers_re, text)
+    if len(matches) < 5:
+        return text
+    return ' '.join(sentence.strip() for sentence in re.split(numbers_re, text))
+
+
+diacritic = r'́'
+
+
+def remove_diacritics(text):
+    return text.replace(diacritic, '')
 
 
 def preprocess_text(text):
-    for fn in [lambda x: x, repl_quotes]:
+    for fn in [lambda x: x, repl_quotes, repl_lines, remove_highlight, strip_numbers, remove_diacritics]:
         text = fn(text).strip()
+        while '  ' in text:
+            text = text.replace('  ', ' ')
     return text
 
 
 def preprocess_sample(sample):
-    return {key: value if key in ["idx", "label", "misc"] or not isinstance(value, str)
+    return {key: value if key in ("idx", "label", "misc") or not isinstance(value, str)
             else preprocess_text(value)
             for key, value in sample.items()}
 
@@ -218,9 +245,9 @@ def preprocess_dataset(dataset):
 
 
 if __name__ == '__main__':
-    for fn in [read_lidirus, read_rcb, read_parus, read_parus_nonnli, read_muserc, read_terra,
-               read_russe, read_rwsd, read_danetqa, read_rucos_nli, read_rucos]:
-        for split in ["train", "test", "val"]:
+    for fn in (read_lidirus, read_rcb, read_parus, read_parus_nonnli, read_muserc, read_terra,
+               read_russe, read_rwsd, read_danetqa, read_rucos_nli, read_rucos):
+        for split in ("train", "test", "val"):
             data = fn(split)
             data = preprocess_dataset(data)
             dct = next(iter(data.values()))
