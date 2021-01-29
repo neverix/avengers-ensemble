@@ -30,28 +30,36 @@ def read_lidirus(split):
     return read_data("LiDiRus/LiDiRus", preprocess_lidirus)
 
 
-def preprocess_parus(data):
+def preprocess_parus(data, nli=True):
     for sample in data:
-        first = sample.idx*2 + 0, utils.Map(
-            premise=sample.premise,
-            hypothesis=sample.choice1,
-            label=int(sample.label == 0)
-        )
-        second = sample.idx * 2 + 1, utils.Map(
-            premise=sample.premise,
-            hypothesis=sample.choice2,
-            label=int(sample.label == 1)
-        )
-        for idx, val in [first, second]:
-            if sample.question == "cause":
-                val.premise, val.hypothesis = val.hypothesis, val.premise
-            val.type = sample.type
-            val.idx = idx
-            yield idx, val
+        if nli:
+            first = sample.idx*2 + 0, utils.Map(
+                premise=sample.premise,
+                hypothesis=sample.choice1,
+                label=int(sample.label == 0)
+            )
+            second = sample.idx * 2 + 1, utils.Map(
+                premise=sample.premise,
+                hypothesis=sample.choice2,
+                label=int(sample.label == 1)
+            )
+            for idx, val in [first, second]:
+                if sample.question == "cause":
+                    val.premise, val.hypothesis = val.hypothesis, val.premise
+                val.type = sample.type
+                val.idx = idx
+                yield idx, val
+        else:
+            sample.label = sample.get("label", 0)
+            yield sample.idx, sample
 
 
 def read_parus(split):
     return read_data(f"PARus/{split}", preprocess_parus)
+
+
+def read_parus_nonnli(split):
+    return read_data(f"PARus/{split}", partial(preprocess_parus, nli=False))
 
 
 def preprocess_rcb(data):
@@ -186,9 +194,11 @@ def read_rucos(split):
 
 
 if __name__ == '__main__':
-    for fn in [read_lidirus, read_rcb, read_parus, read_muserc, read_terra, read_russe,
-               read_rwsd, read_danetqa, read_rucos_nli, read_rucos]:
+    for fn in [read_lidirus, read_rcb, read_parus, read_parus_nonnli, read_muserc, read_terra,
+               read_russe, read_rwsd, read_danetqa, read_rucos_nli, read_rucos]:
         for split in ["train", "test", "val"]:
-            dct = fn(split)
+            dct = next(iter(fn(split).values()))
+            if "misc" in dct:
+                del dct["misc"]
             if split == "train":
-                print(fn.__name__, next(iter(dct.values())))
+                print(fn.__name__, dct)
