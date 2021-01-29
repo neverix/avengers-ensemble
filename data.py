@@ -1,5 +1,6 @@
 import utils
 from functools import partial
+import copy
 
 
 def read_jsonl(fn):
@@ -193,11 +194,36 @@ def read_rucos(split):
     return read_data(f"RuCoS/{split}", partial(preprocess_rucos, nli=False))
 
 
+trans_table = dict([(ord(x), ord(y)) for x, y in zip("‘’´“”«»–-", "'''\"\"\"\"--")])
+
+
+def repl_quotes(string):
+    return string.strip().translate(trans_table).strip()
+
+
+def preprocess_text(text):
+    for fn in [lambda x: x, repl_quotes]:
+        text = fn(text).strip()
+    return text
+
+
+def preprocess_sample(sample):
+    return {key: value if key in ["idx", "label", "misc"] or not isinstance(value, str)
+            else preprocess_text(value)
+            for key, value in sample.items()}
+
+
+def preprocess_dataset(dataset):
+    return {key: preprocess_sample(value) for key, value in dataset.items()}
+
+
 if __name__ == '__main__':
     for fn in [read_lidirus, read_rcb, read_parus, read_parus_nonnli, read_muserc, read_terra,
                read_russe, read_rwsd, read_danetqa, read_rucos_nli, read_rucos]:
         for split in ["train", "test", "val"]:
-            dct = next(iter(fn(split).values()))
+            data = fn(split)
+            data = preprocess_dataset(data)
+            dct = next(iter(data.values()))
             if "misc" in dct:
                 del dct["misc"]
             if split == "train":
