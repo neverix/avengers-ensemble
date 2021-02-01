@@ -1,6 +1,7 @@
 import utils
 from functools import partial
 import re
+import pandas as pd
 
 
 def read_jsonl(fn):
@@ -47,8 +48,8 @@ def preprocess_parus(data, nli=True):
             for idx, val in (first, second):
                 if sample.question == "cause":
                     val.premise, val.hypothesis = val.hypothesis, val.premise
-                val.type = sample.type
-                val.idx = idx
+                val.question = sample.question
+                val.idx = sample.idx
                 yield idx, val
         else:
             sample.label = sample.get("label", 0)
@@ -125,6 +126,7 @@ def read_russe(split):
 
 def preprocess_rwsd(data):
     for sample in data:
+        sample.label = sample.get("label", 0)
         sample.word1 = sample.target["span1_text"]
         sample.word2 = sample.target["span2_text"]
         sample.misc = sample.pop("target")
@@ -151,11 +153,7 @@ def preprocess_rucos(data, nli=False, single=True, interpolate=True):
         entities = sample.passage["entities"]
         candidates = list(set(sample.passage["text"][e["start"]:e["end"]] for e in entities))
         passage = sample.passage.pop("text")
-        del sample.passage
-        if nli:
-            sample.premise = passage
-        else:
-            sample.passage = passage
+        sample.passage = passage
         qas = list(sample.qas)
         sample.misc = utils.Map()
         sample.misc["candidates"] = candidates
@@ -194,11 +192,17 @@ def read_rucos(split):
     return read_data(f"RuCoS/{split}", partial(preprocess_rucos, nli=False))
 
 
-trans_table = dict([(ord(x), ord(y)) for x, y in zip("‘’´“”«»–-", "'''\"\"\"\"--")])
+trans_table = dict([(ord(x), ord(y)) for x, y in zip("‘’´“”«»–-", '""\'""""--')])
 
 
 def repl_quotes(string):
-    return string.translate(trans_table)
+    string = string.translate(trans_table).strip()
+    while string[0] == string[-1] == '"':
+        string = string[1:-1]
+    while '""' in string:
+        string = string.replace('""', '"')
+    return string
+
 
 
 def repl_lines(string):
@@ -228,9 +232,9 @@ def remove_diacritics(text):
 
 def preprocess_text(text):
     for fn in [lambda x: x, repl_quotes, repl_lines, remove_highlight, strip_numbers, remove_diacritics]:
-        text = fn(text).strip()
+        text = fn(text)
         while '  ' in text:
-            text = text.replace('  ', ' ')
+            text = text.replace('  ', ' ').strip()
     return text
 
 
@@ -240,18 +244,45 @@ def preprocess_sample(sample):
             for key, value in sample.items()}
 
 
-def preprocess_dataset(dataset):
-    return {key: preprocess_sample(value) for key, value in dataset.items()}
+def preprocess_dataset(dataset, fun=preprocess_sample):
+    return {key: fun(value) for key, value in dataset.items()}
+
+
+sort_order = ("question", "answer", "word", "word1", "word2", "text",
+              "sentence1", "sentence2", "premise", "hypothesis", "passage")
+
+
+def preprocess_bert(sample, fn):
+    label = sample["label"]
+    sample = {key: value for key, value in sample.items() if key not in ("idx", "misc", "label")}
+    fragments = []
+    for key in sorted(sample.keys(), key=lambda x: sort_order.index(x)):
+        fragments.append(f"{key}: {sample[key]}")
+    text = ' '.join(fragments)
+    dataset_name = fn.__name__.split('_')[1]
+    text = f"{dataset_name} {text}"
+    return text, label
 
 
 if __name__ == '__main__':
-    for fn in (read_lidirus, read_rcb, read_parus, read_parus_nonnli, read_muserc, read_terra,
-               read_russe, read_rwsd, read_danetqa, read_rucos_nli, read_rucos):
+    splits = {}
+    train = []
+    val = []
+    for fn in (read_lidirus, read_rcb, read_parus,  # read_parus_nonnli,
+               read_muserc, read_terra, read_russe, read_rwsd, read_danetqa,  # read_rucos_nli,  # read_rucos
+               ):
         for split in ("train", "test", "val"):
             data = fn(split)
             data = preprocess_dataset(data)
+            data = preprocess_dataset(data, fun=partial(preprocess_bert, fn=fn))
             dct = next(iter(data.values()))
-            if "misc" in dct:
+            if isinstance(dct, dict) and "misc" in dct:
                 del dct["misc"]
             if split == "train":
                 print(fn.__name__, dct)
+            if split not in splits:
+                splits[split] = []
+            splits[split] += data.values()
+
+    for name, df in splits.items():
+        pd.DataFrame(df).to_csv(f"datasets/{name}.csv", header=False, index=False)
