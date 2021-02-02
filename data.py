@@ -2,6 +2,7 @@ import utils
 from functools import partial
 import re
 import pandas as pd
+import ast
 
 
 def read_jsonl(fn):
@@ -264,25 +265,46 @@ def preprocess_bert(sample, fn):
     return text, label
 
 
-if __name__ == '__main__':
+data_funs = (read_lidirus, read_rcb, read_parus,  # read_parus_nonnli,
+             read_muserc, read_terra, read_russe, read_rwsd, read_danetqa,  # read_rucos_nli,  # read_rucos
+             )
+
+
+def read_split(model, split):
+    lines = list(map(ast.literal_eval, open(f"scores/{model}.{split}.scores")))
+    results = {}
+    for fn in data_funs:
+        dataset = fn(split)
+        data = preprocess_dataset(dataset)
+        keys = data.keys()  # sorted(data.keys(), key=lambda x: data[x])
+        results[fn] = dict(zip(keys, lines[:len(data)]))
+        lines = lines[len(data):]
+    return results
+
+
+
+def load_all(verbose=False):
     splits = {}
-    train = []
-    val = []
-    for fn in (read_lidirus, read_rcb, read_parus,  # read_parus_nonnli,
-               read_muserc, read_terra, read_russe, read_rwsd, read_danetqa,  # read_rucos_nli,  # read_rucos
-               ):
+    source = {}
+    for fn in data_funs:
         for split in ("train", "test", "val"):
-            data = fn(split)
-            data = preprocess_dataset(data)
-            data = preprocess_dataset(data, fun=partial(preprocess_bert, fn=fn))
+            src = fn(split)
+            dataset = preprocess_dataset(src)
+            data = preprocess_dataset(dataset, fun=partial(preprocess_bert, fn=fn))
+            source[(fn, split)] = src, dataset, data
             dct = next(iter(data.values()))
             if isinstance(dct, dict) and "misc" in dct:
                 del dct["misc"]
-            if split == "train":
+            if verbose and split == "train":
                 print(fn.__name__, dct)
             if split not in splits:
                 splits[split] = []
-            splits[split] += data.values()
+            splits[split] += data.values()  # sorted(data.values())
+    return splits, source
 
+
+if __name__ == '__main__':
+    print(list(read_split("mbert/mbert", "test")[read_rcb].values())[:10])
+    splits, source = load_all(verbose=True)
     for name, df in splits.items():
         pd.DataFrame(df).to_csv(f"datasets/{name}.csv", header=False, index=False)
