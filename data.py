@@ -249,18 +249,26 @@ sort_order = ("question", "answer", "word", "word1", "word2", "text",
               "sentence1", "sentence2", "premise", "hypothesis", "passage")
 
 
+replacements = dict(
+    question="вопрос", answer="ответ", word="слово", word1="слово1", word2="слово2", text="текст",
+    sentence1="предложение1", sentence2="предложение2", premise="предложение", hypothesis="гипотеза", passage="текст",
+)
+
+
 def fn_name(fn):
     return fn.__name__.split('_')[1]
 
 
-def preprocess_bert(sample, fn):
+def preprocess_bert(sample, fn, single=False):
     label = sample["label"]
     sample = {key: value for key, value in sample.items() if key not in ("idx", "misc", "label")}
     fragments = []
     for key in sorted(sample.keys(), key=lambda x: sort_order.index(x)):
-        fragments.append(f"{key}: {sample[key]}")
+        name = replacements[key]
+        name = name[0].upper() + name[1:]
+        fragments.append(f"{name}: {sample[key]}")
     text = ' '.join(fragments)
-    text = f"{fn_name(fn)} {text}"
+    text = f"{'' if single else (fn_name(fn) + ' ')}{text}"
     return text, label
 
 
@@ -282,7 +290,7 @@ def load_all(tasks=data_funs, verbose=False):
                 # splits[split] += [('0', 0) for _ in src]
                 continue
             dataset = preprocess_dataset(src)
-            data = preprocess_dataset(dataset, fun=partial(preprocess_bert, fn=fn))
+            data = preprocess_dataset(dataset, fun=partial(preprocess_bert, fn=fn, single=len(tasks) == 1))
             source[(fn, split)] = src, dataset, data
             dct = next(iter(data.values()))
             if isinstance(dct, dict) and "misc" in dct:
