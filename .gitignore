@@ -1,6 +1,9 @@
 # Avengers ensemble
 datasets/
 scores/
+outputs/
+outputs.zip
+AutogluonModels/
 .idea/
 
 # Byte-compiled / optimized / DLL files

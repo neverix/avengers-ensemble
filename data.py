@@ -276,7 +276,7 @@ def read_split(model, split):
     for fn in data_funs:
         dataset = fn(split)
         data = preprocess_dataset(dataset)
-        keys = data.keys()  # sorted(data.keys(), key=lambda x: data[x])
+        keys = sorted(data.keys())
         results[fn] = dict(zip(keys, lines[:len(data)]))
         lines = lines[len(data):]
     return results
@@ -299,7 +299,7 @@ def load_all(verbose=False):
                 print(fn.__name__, dct)
             if split not in splits:
                 splits[split] = []
-            splits[split] += data.values()  # sorted(data.values())
+            splits[split] += [v for k, v in sorted(data.items())]
     return splits, source
 
 
