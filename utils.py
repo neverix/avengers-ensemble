@@ -9,7 +9,7 @@ def load_jsonl(fpath):
 
 
 def write_jsonl(fpath, jsonl):
-    open(fpath, 'w').write('\n'.join([json.dumps(x) for x in jsonl]))
+    open(fpath, 'w').write('\n'.join([json.dumps(x) for x in jsonl]) + '\n')
 
 
 class Map(dict):

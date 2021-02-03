@@ -2,7 +2,6 @@ import utils
 from functools import partial
 import re
 import pandas as pd
-import ast
 
 
 def read_jsonl(fn):
@@ -224,11 +223,8 @@ def strip_numbers(text):
     return ' '.join(sentence.strip() for sentence in re.split(numbers_re, text))
 
 
-diacritic = r'́'
-
-
 def remove_diacritics(text):
-    return text.replace(diacritic, '')
+    return text.replace(r'́', '').replace('\xad', '')
 
 
 def preprocess_text(text):
@@ -253,6 +249,10 @@ sort_order = ("question", "answer", "word", "word1", "word2", "text",
               "sentence1", "sentence2", "premise", "hypothesis", "passage")
 
 
+def fn_name(fn):
+    return fn.__name__.split('_')[1]
+
+
 def preprocess_bert(sample, fn):
     label = sample["label"]
     sample = {key: value for key, value in sample.items() if key not in ("idx", "misc", "label")}
@@ -260,8 +260,7 @@ def preprocess_bert(sample, fn):
     for key in sorted(sample.keys(), key=lambda x: sort_order.index(x)):
         fragments.append(f"{key}: {sample[key]}")
     text = ' '.join(fragments)
-    dataset_name = fn.__name__.split('_')[1]
-    text = f"{dataset_name} {text}"
+    text = f"{fn_name(fn)} {text}"
     return text, label
 
 
@@ -270,41 +269,42 @@ data_funs = (read_lidirus, read_rcb, read_parus,  # read_parus_nonnli,
              )
 
 
-def read_split(model, split):
-    lines = list(map(ast.literal_eval, open(f"scores/{model}.{split}.scores")))
-    results = {}
-    for fn in data_funs:
-        dataset = fn(split)
-        data = preprocess_dataset(dataset)
-        keys = sorted(data.keys())
-        results[fn] = dict(zip(keys, lines[:len(data)]))
-        lines = lines[len(data):]
-    return results
 
-
-
-def load_all(verbose=False):
+def load_all(tasks=data_funs, verbose=False):
     splits = {}
     source = {}
     for fn in data_funs:
         for split in ("train", "test", "val"):
+            if split not in splits:
+                splits[split] = []
             src = fn(split)
+            if fn not in tasks:
+                # splits[split] += [('0', 0) for _ in src]
+                continue
             dataset = preprocess_dataset(src)
             data = preprocess_dataset(dataset, fun=partial(preprocess_bert, fn=fn))
             source[(fn, split)] = src, dataset, data
             dct = next(iter(data.values()))
             if isinstance(dct, dict) and "misc" in dct:
                 del dct["misc"]
-            if verbose and split == "train":
+            if verbose and split == "val":
                 print(fn.__name__, dct)
-            if split not in splits:
-                splits[split] = []
             splits[split] += [v for k, v in sorted(data.items())]
     return splits, source
 
 
-if __name__ == '__main__':
-    print(list(read_split("mbert/mbert", "test")[read_rcb].values())[:10])
-    splits, source = load_all(verbose=True)
+def make_df(tasks):
+    print("Preprocessing", tasks)
+    splits, source = load_all(tasks, verbose=True)
     for name, df in splits.items():
-        pd.DataFrame(df).to_csv(f"datasets/{name}.csv", header=False, index=False)
+        file_name = '' if set(tasks) == set(data_funs) else '-'.join(fn_name(task) for task in tasks) + '_'
+        pd.DataFrame(df).to_csv(f"datasets/{file_name}{name}.csv",
+                                header=False, index=False)
+
+
+
+if __name__ == '__main__':
+    # print(list(read_split("mbert/mbert", "test")[read_rcb].values())[:10])
+    make_df([read_rcb])
+    make_df([read_terra])
+    make_df(data_funs)
