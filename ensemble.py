@@ -51,7 +51,7 @@ def process_rcb(_dataset, preds):
     return [{"idx": k, "label": ["contradiction", "neutral", "entailment"][int(v)]} for k, v in preds.items()]
 
 
-models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-terra-x", "xlm/anli-terra-xx", "xlm/anli-rcb", "mbert/mbert")[:-1]
+models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb", "zero/zero", "mbert/mbert")[:-1]
 datasets = {
     data.read_terra: (process_terra, "TERRa", "acc"),
     data.read_rcb: (process_rcb, "RCB", "acc"),
