@@ -5,6 +5,7 @@ import utils
 import shutil
 import ast
 import itertools
+from sklearn.metrics import matthews_corrcoef, accuracy_score
 
 
 def subset_sum(dct, target):
@@ -57,6 +58,10 @@ datasets = {
     data.read_rcb: (process_rcb, "RCB", "acc"),
     data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
 }
+metrics = dict(
+    acc=accuracy_score,
+    mcc=matthews_corrcoef,
+)
 
 
 def make_feats(dataset):
@@ -103,7 +108,7 @@ def ensemble_predictions(train, splits, metric):
             mcc="MCC",
             acc="Accuracy"
         )[metric]
-    ), 'RF': {}})
+    ), 'RF': {}}, verbose=False)
     print("Computing...")
     predictions_ensemble = {}
     for name, split in splits.items():
@@ -124,9 +129,35 @@ def build_model(dataset, feats, fn):
     return fun(dataset, preds["test"])
 
 
+def best_features(x_test, y_test, metric=accuracy_score):
+    #
+    feat = []
+    for c in x_test.columns:
+        xs = sorted(x_test[c])
+        scores = []
+        for z in xs[::len(xs)//100]:
+            for n in [-1, 1]:
+                y_ = (x_test[c] * n > z * n).astype(int)
+                scores.append((metric(y_, y_test), z))
+        score, thresh = max(scores)
+        feat.append((score, c))
+    feat.sort()
+    return feat
+
+
 if __name__ == '__main__':
     dataset = data.load_all(verbose=True)
     feats = make_feats(dataset)
+
+    for fn in datasets:
+        print(datasets[fn][1])
+        val_df = feats[fn]["val"]
+        x, y = x_y(val_df)
+        feat = best_features(x, y, metric=metrics[datasets[fn][-1]])
+        for score, c in feat:
+            print(f" {c}: {score}")
+    exit()
+
     for fn, (processor, name, *_) in datasets.items():
         preds = build_model(dataset, feats, fn)
         print(f"Writing {name}...")
