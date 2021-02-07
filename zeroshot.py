@@ -9,10 +9,27 @@ def process_terra(sample):
     return get_words(sample["premise"]), "{} следует из текста", (get_words(sample["hypothesis"]),)
 
 
+def process_lidirus(sample):
+    return get_words(sample["premise"]), "{} следует из текста", (get_words(sample["hypothesis"]),)
+
+
+def process_rcb(sample):
+    return get_words(sample["premise"]), "{} следует из текста", (get_words(sample["hypothesis"]),)
+
+
+def process_russe(sample):
+    return get_words(sample["sentence1"]), f"слово {sample['word']} применяется в том же смысле {'{}'}",\
+           (get_words(sample["sentence2"]),)
+
+
 tokenizer = RegexpTokenizer(r'\d+[ ]+\d+[ ]+\d+|\d+[ ]+\d+|[a-zA-Z]+[.]+[a-zA-Z]+|[A-Z]+[a-z]+|\d+[.,:+-]+\d+|\w+')
 processors = {
-    data.read_terra: process_terra
+    data.read_terra: process_terra,
+    data.read_lidirus: process_lidirus,
+    data.read_rcb: process_rcb,
+    data.read_russe: process_russe
 }
+name = "zero-norm/super"
 
 
 def preprocess_word(word):
@@ -46,13 +63,14 @@ def main():
     for split in ("val", "test"):
         print("processing", split)
         results = []
-        for dataset in processors:
-            print(" computing", dataset.__name__)
-            preds = make_preds_zero_shot(classifier, dataset, split)
-            for pred in tqdm(preds, total=len(dataset(split))):
-                results.append(pred)
+        for dataset in data.data_funs:
+            if dataset in processors:
+                print(" computing", dataset.__name__)
+                preds = make_preds_zero_shot(classifier, dataset, split)
+                for pred in tqdm(preds, total=len(dataset(split))):
+                    results.append(pred)
         print(" writing")
-        open(f"scores/zero-norm/zero.{split}.scores", 'w').write('\n'.join(str(p) for p in results))
+        open(f"scores/{name}.{split}.scores", 'w').write('\n'.join(str(p) for p in results))
 
 
 if __name__ == '__main__':

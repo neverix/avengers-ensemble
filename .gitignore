@@ -4,6 +4,7 @@ scores/
 outputs/
 outputs.zip
 AutogluonModels/
+cache_dir/
 .idea/
 
 # Byte-compiled / optimized / DLL files

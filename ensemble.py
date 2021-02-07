@@ -6,10 +6,12 @@ import shutil
 import ast
 import itertools
 from sklearn.metrics import matthews_corrcoef, accuracy_score
+from cache import mem
 
 
+@mem.cache
 def subset_sum(dct, target):
-    for r in range(1, len(dct) + 1):
+    for r in range(len(dct) + 1, 0, -1):
         for comb in itertools.combinations(dct, r):
             if sum(dct[w] for w in comb) == target:
                 return comb
@@ -22,9 +24,10 @@ def read_split(model, split):
     datasets = {fn: fn(split) for fn in data.data_funs}
     lens = {key: len(val) for key, val in datasets.items()}
     print("Solving subset sum...")
-    for length in range(length+1, length-2, -1):
-        comb = subset_sum(lens, length)
+    for length_ in range(length+1, length-1, -1):
+        comb = subset_sum(lens, length_)
         if comb is not None:
+            # print(model, length, length_)
             break
     assert comb is not None
     print("Solved!")
@@ -56,9 +59,15 @@ def process_russe(_dataset, preds):
     return [{"idx": k, "label": [False, True][int(v)]} for k, v in preds.items()]
 
 
-models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb",
+def process_parus(_dataset, preds):
+    print(_dataset)
+    exit()
+
+
+models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb", "zero-norm/super",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero", "mbert/mbert")[:-1]
 datasets = {
+    # data.read_parus: (process_parus, "PARus", "acc"),
     data.read_terra: (process_terra, "TERRa", "acc"),
     data.read_rcb: (process_rcb, "RCB", "acc"),
     data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
