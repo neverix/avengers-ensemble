@@ -285,10 +285,10 @@ def load_all(tasks=data_funs, verbose=False):
         for split in ("train", "test", "val"):
             if split not in splits:
                 splits[split] = []
-            src = fn(split)
             if fn not in tasks:
                 # splits[split] += [('0', 0) for _ in src]
                 continue
+            src = fn(split)
             dataset = preprocess_dataset(src)
             data = preprocess_dataset(dataset, fun=partial(preprocess_bert, fn=fn, single=len(tasks) == 1))
             source[(fn, split)] = src, dataset, data

@@ -52,11 +52,17 @@ def process_rcb(_dataset, preds):
     return [{"idx": k, "label": ["contradiction", "neutral", "entailment"][int(v)]} for k, v in preds.items()]
 
 
-models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb", "zero/zero", "mbert/mbert")[:-1]
+def process_russe(_dataset, preds):
+    return [{"idx": k, "label": [False, True][int(v)]} for k, v in preds.items()]
+
+
+models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb",
+          "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero", "mbert/mbert")[:-1]
 datasets = {
     data.read_terra: (process_terra, "TERRa", "acc"),
     data.read_rcb: (process_rcb, "RCB", "acc"),
     data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
+    data.read_russe: (process_russe, "RUSSE", "acc")
 }
 metrics = dict(
     acc=accuracy_score,
@@ -108,7 +114,7 @@ def ensemble_predictions(train, splits, metric):
             mcc="MCC",
             acc="Accuracy"
         )[metric]
-    ), 'RF': {}}, verbose=False)
+    ), 'RF': {}})
     print("Computing...")
     predictions_ensemble = {}
     for name, split in splits.items():
@@ -156,10 +162,12 @@ if __name__ == '__main__':
         feat = best_features(x, y, metric=metrics[datasets[fn][-1]])
         for score, c in feat:
             print(f" {c}: {score}")
-    exit()
+    # exit()
 
     for fn, (processor, name, *_) in datasets.items():
         preds = build_model(dataset, feats, fn)
         print(f"Writing {name}...")
         utils.write_jsonl(f"outputs/{name}.jsonl", preds)
+    print("Archiving...")
     shutil.make_archive("outputs", "zip", "outputs/")
+    print("Done!")
