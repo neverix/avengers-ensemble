@@ -1,7 +1,7 @@
 import re
 from tqdm import tqdm
 from nltk.tokenize import RegexpTokenizer
-from transformers import pipeline
+from transformers import pipeline, tokenization_utils_base
 import data
 
 
@@ -14,7 +14,9 @@ def process_lidirus(sample):
 
 
 def process_rcb(sample):
-    return get_words(sample["premise"]), "{} следует из текста", (get_words(sample["hypothesis"]),)
+    return get_words(sample["premise"]), "{}", (f"{get_words(sample['hypothesis'])} следует из текста",
+                                                f"{get_words(sample['hypothesis'])} не следует из текста",
+                                                f"{get_words(sample['hypothesis'])} не относится к тексту",)
 
 
 def process_russe(sample):
@@ -29,7 +31,7 @@ processors = {
     data.read_rcb: process_rcb,
     data.read_russe: process_russe
 }
-name = "zero-norm/super"
+name = "zero-norm/super-rcb"
 
 
 def preprocess_word(word):
@@ -52,7 +54,8 @@ def make_preds_zero_shot(model, dataset, split):
     processor = processors[dataset]
     for k, v in sorted(datas.items()):
         premise, hypothesis_template, hypotheses = processor(v)
-        preds = model(premise, hypotheses, multi_class=False, hypothesis_template=hypothesis_template)
+        preds = model(premise, hypotheses, multi_class=False, hypothesis_template=hypothesis_template,
+                      truncation=tokenization_utils_base.TruncationStrategy.DO_NOT_TRUNCATE)
         yield tuple(preds["scores"])
 
 

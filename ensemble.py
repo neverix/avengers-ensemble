@@ -43,31 +43,35 @@ def read_split(model, split):
     return results
 
 
-def process_terra(_dataset, preds):
+def process_terra(_dataset, preds, _probs):
     return [{"idx": k, "label": ["not_entailment", "entailment"][int(v)]} for k, v in preds.items()]
 
 
-def process_lidirus(_dataset, preds):
+def process_lidirus(_dataset, preds, _probs):
     return [{"idx": k, "label": ["not_entailment", "entailment"][int(v)]} for k, v in preds.items()]
 
 
-def process_rcb(_dataset, preds):
+def process_rcb(_dataset, preds, _probs):
     return [{"idx": k, "label": ["contradiction", "neutral", "entailment"][int(v)]} for k, v in preds.items()]
 
 
-def process_russe(_dataset, preds):
+def process_russe(_dataset, preds, _probs):
     return [{"idx": k, "label": [False, True][int(v)]} for k, v in preds.items()]
 
 
-def process_parus(_dataset, preds):
-    print(_dataset)
-    exit()
+def process_parus(_dataset, _preds, probs):
+    vals = list(probs.values())
+    result = []
+    for i in range(len(vals) // 2):
+        result.append({"idx": i, "label": int(vals[i*2+1] > vals[i*2+0])})
+    return result
 
 
 models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb", "zero-norm/super",
+          "zero-norm/super-rcb",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero", "mbert/mbert")[:-1]
 datasets = {
-    # data.read_parus: (process_parus, "PARus", "acc"),
+    data.read_parus: (process_parus, "PARus", "acc"),
     data.read_terra: (process_terra, "TERRa", "acc"),
     data.read_rcb: (process_rcb, "RCB", "acc"),
     data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
@@ -132,20 +136,20 @@ def ensemble_predictions(train, splits, metric):
         # model_predictions = [model[name] * weight for (_, model, *_), weight in zip(models, weights)]
         # predictions = [float(sum([x[1] if len(x) > 1 else x[0] for x in preds])) for preds in zip(*model_predictions)]
         y_pred = predictor.predict(feats)
+        y_prob = [float(x) if x.size < 2 else [float(y) for y in x] for x in predictor.predict_proba(feats)]
         if split == "val":
             print(predictor.evaluate_predictions(y_true=y_true, y_pred=y_pred, auxiliary_metrics=True))
-        predictions_ensemble[name] = dict(zip(split.keys(), y_pred))
+        predictions_ensemble[name] = dict(zip(split.keys(), y_pred)), dict(zip(split.keys(), y_prob))
     return predictions_ensemble
 
 
 def build_model(dataset, feats, fn):
     fun, _, metric, *_ = datasets[fn]
     preds = ensemble_predictions(feats[fn]["val"], feats[fn], metric=metric)
-    return fun(dataset, preds["test"])
+    return fun(dataset, *preds["test"])
 
 
 def best_features(x_test, y_test, metric=accuracy_score):
-    #
     feat = []
     for c in x_test.columns:
         xs = sorted(x_test[c])
