@@ -5,10 +5,11 @@ import utils
 import shutil
 import ast
 import itertools
-from sklearn.metrics import matthews_corrcoef, accuracy_score
+from sklearn.metrics import matthews_corrcoef, accuracy_score, f1_score
 from sklearn.linear_model import LogisticRegression
 from cache import mem
 import warnings
+from muserc import write_muserc, strip_muserc
 
 
 @mem.cache
@@ -73,18 +74,33 @@ def process_danetqa(_dataset, preds, _probs):
     return [{"idx": k, "label": [False, True][int(v)]} for k, v in preds.items()]
 
 
+def process_muserc(_dataset, preds, _probs):
+    return strip_muserc(write_muserc("datasets/MuSeRC/test.jsonl", preds))
+    # splits, source = dataset
+    # src, datas, data_ = source[(data.read_muserc, "test")]
+    # print(src.keys(), src[5])
+    # exit()
+
+
+def process_rwsd(_dataset, preds, _probs):
+    return [{"idx": k, "label": [False, True][int(v)]} for k, v in preds.items()]
+
+
 models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb", "zero-norm/super",
           "zero-norm/super-rcb",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero", "mbert/mbert")[:-1]
 datasets = {
+    data.read_rwsd: (process_rwsd, "RWSD", "acc"),
+    data.read_muserc: (process_muserc, "MuSeRC", "f1"),
     data.read_terra: (process_terra, "TERRa", "acc"),
     data.read_rcb: (process_rcb, "RCB", "acc"),
     data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
     data.read_russe: (process_russe, "RUSSE", "acc"),
     data.read_parus: (process_parus, "PARus", "acc"),
-    data.read_danetqa: (process_danetqa, "DaNetQA", "acc")
+    data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
 }
 metrics = dict(
+    f1=f1_score,
     acc=accuracy_score,
     mcc=matthews_corrcoef,
 )
