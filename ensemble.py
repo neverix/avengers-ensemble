@@ -6,7 +6,9 @@ import shutil
 import ast
 import itertools
 from sklearn.metrics import matthews_corrcoef, accuracy_score
+from sklearn.linear_model import LogisticRegression
 from cache import mem
+import warnings
 
 
 @mem.cache
@@ -67,15 +69,20 @@ def process_parus(_dataset, _preds, probs):
     return result
 
 
+def process_danetqa(_dataset, preds, _probs):
+    return [{"idx": k, "label": [False, True][int(v)]} for k, v in preds.items()]
+
+
 models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb", "zero-norm/super",
           "zero-norm/super-rcb",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero", "mbert/mbert")[:-1]
 datasets = {
-    data.read_parus: (process_parus, "PARus", "acc"),
     data.read_terra: (process_terra, "TERRa", "acc"),
     data.read_rcb: (process_rcb, "RCB", "acc"),
     data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
-    data.read_russe: (process_russe, "RUSSE", "acc")
+    data.read_russe: (process_russe, "RUSSE", "acc"),
+    data.read_parus: (process_parus, "PARus", "acc"),
+    data.read_danetqa: (process_danetqa, "DaNetQA", "acc")
 }
 metrics = dict(
     acc=accuracy_score,
@@ -150,28 +157,35 @@ def build_model(dataset, feats, fn):
 
 
 def best_features(x_test, y_test, metric=accuracy_score):
-    feat = []
-    for c in x_test.columns:
-        xs = sorted(x_test[c])
-        scores = []
-        for z in xs[::len(xs)//100]:
-            for n in [-1, 1]:
-                y_ = (x_test[c] * n > z * n).astype(int)
-                scores.append((metric(y_, y_test), z))
-        score, thresh = max(scores)
-        feat.append((score, c))
-    feat.sort()
-    return feat
+    y_test = y_test.fillna(0)
+    all_feats = x_test.columns
+    real_feats = set('_'.join(feat.split('_')[:-1]) if feat[-1].isdigit() and '_' in feat else feat for feat in all_feats)
+    feats = []
+    for feat in real_feats:
+        related = [x for x in all_feats if x.startswith(feat + '_')]
+        x_rel = x_test[related].fillna(0)
+        model = LogisticRegression()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            model.fit(x_rel, y_test)
+        probs = model.predict(x_rel)
+        feats.append((metric(probs, y_test), feat))
+    feats.sort()
+    return feats
 
 
 if __name__ == '__main__':
+    print("Loading data...")
     dataset = data.load_all(verbose=True)
+    print("Making features...")
     feats = make_feats(dataset)
+    print("Features done, finding best...")
 
     for fn in datasets:
         print(datasets[fn][1])
         val_df = feats[fn]["val"]
         x, y = x_y(val_df)
+        print("Getting best features...")
         feat = best_features(x, y, metric=metrics[datasets[fn][-1]])
         for score, c in feat:
             print(f" {c}: {score}")

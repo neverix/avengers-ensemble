@@ -14,9 +14,9 @@ def process_lidirus(sample):
 
 
 def process_rcb(sample):
-    return get_words(sample["premise"]), "{}", (f"{get_words(sample['hypothesis'])} следует из текста",
-                                                f"{get_words(sample['hypothesis'])} не следует из текста",
-                                                f"{get_words(sample['hypothesis'])} не относится к тексту",)
+    return get_words(sample["premise"]), "{}", (f"{get_words(sample['hypothesis'])} не следует из текста",
+                                                f"{get_words(sample['hypothesis'])} не относится к тексту",
+                                                f"{get_words(sample['hypothesis'])} следует из текста",)
 
 
 def process_russe(sample):
