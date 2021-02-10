@@ -1,4 +1,5 @@
 import utils
+import translator
 from functools import partial
 import re
 import pandas as pd
@@ -272,17 +273,32 @@ def preprocess_bert(sample, fn, single=False):
     return text, label
 
 
+def replace_table(sample, table=None):
+    if table is None:
+        table = {}
+    return {key: (table[value] if isinstance(key, str) and key not in ("idx", "misc", "label") else value)
+            for key, value in sample.items()}
+
+
+def to_translate(data):
+    result = set()
+    for sample in data.values():
+        result.update({value for key, value in sample.items() if isinstance(value, str) and key not in ("idx", "label", "misc")})
+    return result
+
+
 data_funs = (read_lidirus, read_rcb, read_parus,  # read_parus_nonnli,
              read_muserc, read_terra, read_russe, read_rwsd, read_danetqa,  # read_rucos_nli,  # read_rucos
              )
+translation_path = "translations/translation.json"
 
 
-
-def load_all(tasks=data_funs, verbose=False):
+def load_all(tasks=data_funs, verbose=False, translate=False):
     splits = {}
     source = {}
     for fn in data_funs:
         for split in ("train", "test", "val"):
+            print("Reading", fn.__name__, split)
             if split not in splits:
                 splits[split] = []
             if fn not in tasks:
@@ -290,6 +306,9 @@ def load_all(tasks=data_funs, verbose=False):
                 continue
             src = fn(split)
             dataset = preprocess_dataset(src)
+            if translate:
+                table = translator.translate_all(to_translate(dataset), translation_path)
+                dataset = preprocess_dataset(dataset, fun=partial(replace_table, table=table))
             data = preprocess_dataset(dataset, fun=partial(preprocess_bert, fn=fn, single=len(tasks) == 1))
             source[(fn, split)] = src, dataset, data
             dct = next(iter(data.values()))
@@ -312,6 +331,8 @@ def make_df(tasks):
 
 
 if __name__ == '__main__':
+    load_all(data_funs, verbose=True, translate=True)
+    exit()
     # print(list(read_split("mbert/mbert", "test")[read_rcb].values())[:10])
     make_df([read_rcb])
     make_df([read_terra])

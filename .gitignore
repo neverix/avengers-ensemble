@@ -5,6 +5,7 @@ outputs/
 outputs.zip
 AutogluonModels/
 cache_dir/
+translations/
 .idea/
 
 # Byte-compiled / optimized / DLL files
