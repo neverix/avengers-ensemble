@@ -230,7 +230,7 @@ def remove_diacritics(text):
 
 def preprocess_text(text):
     for fn in [lambda x: x, repl_quotes, repl_lines, remove_highlight, strip_numbers, remove_diacritics]:
-        text = fn(text)
+        text = fn(text).strip()
         while '  ' in text:
             text = text.replace('  ', ' ').strip()
     return text
@@ -248,12 +248,11 @@ def preprocess_dataset(dataset, fun=preprocess_sample):
 
 sort_order = ("question", "answer", "word", "word1", "word2", "text",
               "sentence1", "sentence2", "premise", "hypothesis", "passage")
-
-
 replacements = dict(
     question="вопрос", answer="ответ", word="слово", word1="слово1", word2="слово2", text="текст",
     sentence1="предложение1", sentence2="предложение2", premise="предложение", hypothesis="гипотеза", passage="текст",
 )
+do_replace = False
 
 
 def fn_name(fn):
@@ -265,7 +264,9 @@ def preprocess_bert(sample, fn, single=False):
     sample = {key: value for key, value in sample.items() if key not in ("idx", "misc", "label")}
     fragments = []
     for key in sorted(sample.keys(), key=lambda x: sort_order.index(x)):
-        name = replacements[key]
+        name = key
+        if do_replace:
+            name = replacements[name]
         name = name[0].upper() + name[1:]
         fragments.append(f"{name}: {sample[key]}")
     text = ' '.join(fragments)
