@@ -3,6 +3,7 @@ import translator
 from functools import partial
 import re
 import pandas as pd
+import csv
 
 
 def read_jsonl(fn):
@@ -321,17 +322,20 @@ def load_all(tasks=data_funs, verbose=False, translate=False):
     return splits, source
 
 
-def make_df(tasks):
+def make_df(tasks, is_tsv=False, **kwargs):
+    tsv_params = dict(sep="\t", quoting=csv.QUOTE_NONE)
     print("Preprocessing", tasks)
-    splits, source = load_all(tasks, verbose=True)
+    splits, source = load_all(tasks, verbose=True, **kwargs)
     for name, df in splits.items():
         file_name = '' if set(tasks) == set(data_funs) else '-'.join(fn_name(task) for task in tasks) + '_'
-        pd.DataFrame(df).to_csv(f"datasets/{file_name}{name}.csv",
-                                header=False, index=False)
+        pd.DataFrame(df).to_csv(f"datasets/{file_name}{name}.{'tsv' if is_tsv else 'csv'}",
+                                header=False, index=False, **(tsv_params if is_tsv else {}))
 
 
 
 if __name__ == '__main__':
+    make_df([read_parus], translate=True)
+    exit()
     load_all(data_funs, verbose=True, translate=True)
     exit()
     # print(list(read_split("mbert/mbert", "test")[read_rcb].values())[:10])
