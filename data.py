@@ -332,9 +332,8 @@ def make_df(tasks, is_tsv=False, **kwargs):
                                 header=False, index=False, **(tsv_params if is_tsv else {}))
 
 
-
 if __name__ == '__main__':
-    make_df([read_parus], translate=True)
+    make_df([read_parus], is_tsv=True, translate=True)
     exit()
     load_all(data_funs, verbose=True, translate=True)
     exit()
