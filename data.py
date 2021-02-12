@@ -329,18 +329,22 @@ def load_all(tasks=data_funs, verbose=False, translate=False):
     return splits, source
 
 
-def make_df(tasks, is_tsv=False, **kwargs):
+def make_df(tasks, is_tsv=False, source_only=False, **kwargs):
     tsv_params = dict(sep="\t", quoting=csv.QUOTE_NONE)
     print("Preprocessing", tasks)
     splits, source = load_all(tasks, verbose=True, **kwargs)
     for name, df in splits.items():
         file_name = '' if set(tasks) == set(data_funs) else '-'.join(fn_name(task) for task in tasks) + '_'
-        pd.DataFrame(df).to_csv(f"datasets/{file_name}{name}.{'tsv' if is_tsv else 'csv'}",
+        df = pd.DataFrame(df)
+        if source_only:
+            df.drop(columns=[df.columns[-1]], inplace=True)
+        df.to_csv(f"datasets/{file_name}{name}.{'txt' if source_only else 'tsv' if is_tsv else 'csv'}",
                                 header=False, index=False, **(tsv_params if is_tsv else {}))
 
 
 if __name__ == '__main__':
     make_df([read_danetqa], is_tsv=True, translate=True)
+    make_df([read_danetqa], source_only=True, is_tsv=True, translate=True)
     exit()
     load_all(data_funs, verbose=True, translate=True)
     exit()
