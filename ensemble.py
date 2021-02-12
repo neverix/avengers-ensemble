@@ -88,7 +88,7 @@ def process_rwsd(_dataset, preds, _probs):
 
 
 models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb", "zero-norm/super",
-          "zero-norm/super-rcb", "silver/silver",
+          "zero-norm/super-rcb", "silver/silver", "golden/1", "golden/2", "golden/3", "golden/4",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero", "mbert/mbert")[:-1]
 datasets = {
     data.read_rwsd: (process_rwsd, "RWSD", "acc"),
@@ -112,6 +112,7 @@ def make_feats(dataset):
     for split in ("val", "test"):
         for model in models:
             preds[(model, split)] = read_split(model, split)
+    print("Got features.")
 
     splits, source = dataset
     total = {}
