@@ -24,14 +24,26 @@ def process_russe(sample):
            (get_words(sample["sentence2"]),)
 
 
+def process_danetqa(sample):
+    # print(sample)
+    # exit()
+    return get_words(sample["passage"]), sample["question"] + " {}", ('да',)
+
+
+def process_muserc(sample):
+    return get_words(sample["passage"]), "Ответ на вопрос " + sample["question"] + " {}.", (sample["answer"],)
+
+
 tokenizer = RegexpTokenizer(r'\d+[ ]+\d+[ ]+\d+|\d+[ ]+\d+|[a-zA-Z]+[.]+[a-zA-Z]+|[A-Z]+[a-z]+|\d+[.,:+-]+\d+|\w+')
 processors = {
+    data.read_danetqa: process_danetqa,
     data.read_terra: process_terra,
     data.read_lidirus: process_lidirus,
     data.read_rcb: process_rcb,
-    data.read_russe: process_russe
+    data.read_russe: process_russe,
+    data.read_muserc: process_muserc,
 }
-name = "zero-norm/super-rcb"
+name = "zero-norm/super-qa"
 
 
 def preprocess_word(word):
@@ -54,8 +66,7 @@ def make_preds_zero_shot(model, dataset, split):
     processor = processors[dataset]
     for k, v in sorted(datas.items()):
         premise, hypothesis_template, hypotheses = processor(v)
-        preds = model(premise, hypotheses, multi_class=False, hypothesis_template=hypothesis_template,
-                      truncation=tokenization_utils_base.TruncationStrategy.DO_NOT_TRUNCATE)
+        preds = model(premise, hypotheses, multi_class=False, hypothesis_template=hypothesis_template)
         yield tuple(preds["scores"])
 
 
