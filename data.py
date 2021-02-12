@@ -194,7 +194,7 @@ def read_rucos(split):
     return read_data(f"RuCoS/{split}", partial(preprocess_rucos, nli=False))
 
 
-trans_table = dict([(ord(x), ord(y)) for x, y in zip("‘’´“”«»–-", '""\'""""--')])
+trans_table = dict([(ord(x), ord(y)) for x, y in zip("‘’´“”«»—–-", '""\'""""---')])
 
 
 def repl_quotes(string):
@@ -234,7 +234,7 @@ def preprocess_text(text):
         text = fn(text).strip()
         while '  ' in text:
             text = text.replace('  ', ' ').strip()
-    return text
+    return text.strip()
 
 
 def preprocess_sample(sample):
@@ -254,9 +254,15 @@ replacements = dict(
     sentence1="предложение1", sentence2="предложение2", premise="предложение", hypothesis="гипотеза", passage="текст",
 )
 do_replace = False
+is_upper = False
+mapping = {
+    read_danetqa: "boolq"
+}
 
 
 def fn_name(fn):
+    if fn in mapping:
+        return mapping[fn]
     return fn.__name__.split('_')[1]
 
 
@@ -268,10 +274,11 @@ def preprocess_bert(sample, fn, single=False):
         name = key
         if do_replace:
             name = replacements[name]
-        name = name[0].upper() + name[1:]
+        if is_upper:
+            name = name[0].upper() + name[1:]
         fragments.append(f"{name}: {sample[key]}")
     text = ' '.join(fragments)
-    text = f"{'' if single else (fn_name(fn) + ' ')}{text}"
+    text = f"{'' if single and False else (fn_name(fn) + ' ')}{text}"
     return text, label
 
 
@@ -333,7 +340,7 @@ def make_df(tasks, is_tsv=False, **kwargs):
 
 
 if __name__ == '__main__':
-    make_df([read_parus], is_tsv=True, translate=True)
+    make_df([read_danetqa], is_tsv=True, translate=True)
     exit()
     load_all(data_funs, verbose=True, translate=True)
     exit()

@@ -22,6 +22,7 @@ def subset_sum(dct, target):
 
 def read_split(model, split):
     lines = list(map(ast.literal_eval, open(f"scores/{model}.{split}.scores")))
+    lines = [x if isinstance(x, tuple) else (x,) for x in lines]
 
     length = len(lines)
     datasets = {fn: fn(split) for fn in data.data_funs}
@@ -87,7 +88,7 @@ def process_rwsd(_dataset, preds, _probs):
 
 
 models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb", "zero-norm/super",
-          "zero-norm/super-rcb",
+          "zero-norm/super-rcb", "silver/silver",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero", "mbert/mbert")[:-1]
 datasets = {
     data.read_rwsd: (process_rwsd, "RWSD", "acc"),

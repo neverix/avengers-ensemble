@@ -6,7 +6,7 @@ from stem.control import Controller
 import time
 
 
-def translate(lines, translations=None, char_limit=25_000, tor_port=9050, cnt_port=9051, cb=lambda x: None):
+def translate(lines, translations=None, char_limit=20_000, tor_port=9050, cnt_port=9051, cb=lambda x: None):
     if translations is None:
         translations = {}
     total = len(lines)
@@ -45,7 +45,8 @@ def translate(lines, translations=None, char_limit=25_000, tor_port=9050, cnt_po
             time.sleep(10)
             continue
         txt = html.unescape(txt[5:-6]).split('\n')
-        update_dict = {k: v for k, v in zip(to_translate, txt) if not russian(v)}
+        # print(to_translate, txt)
+        update_dict = {k: v for k, v in zip(to_translate, txt) if not (russian(v) or v in to_translate)}
         translations.update(update_dict)
         print("Left:", f'{len(lines)}/{total}', "Efficiency:", (len(update_dict) + 1) / (len(to_translate) + 1) * 100)
         cb(translations)
@@ -55,7 +56,7 @@ def translate(lines, translations=None, char_limit=25_000, tor_port=9050, cnt_po
 abcd = set('абвгдеёжзийклмнопрстуфхцчшщъыьэюя')
 def russian(x):
     x = x.lower()
-    if len([y for y in x if y in abcd]) > 1:
+    if len([y for y in x if y in abcd]) / len(x) > 0.03:
         return True
     return False
 
