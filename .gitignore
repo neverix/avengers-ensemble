@@ -2,7 +2,7 @@
 datasets/
 scores/
 outputs/
-outputs.zip
+*.zip
 AutogluonModels/
 cache_dir/
 translations/
