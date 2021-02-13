@@ -199,16 +199,16 @@ trans_table = dict([(ord(x), ord(y)) for x, y in zip("‘’´“”«»—–-"
 
 def repl_quotes(string):
     string = string.translate(trans_table).strip()
-    while string[0] == string[-1] == '"':
+    while string[0] == string[-1] == '"' and False:
         string = string[1:-1]
-    while '""' in string:
+    while '""' in string and False:
         string = string.replace('""', '"')
     return string
 
 
 
 def repl_lines(string):
-    return string.replace('\n', ' ')
+    return string.replace('\n', ' ').replace('\t', '')
 
 
 def remove_highlight(string):
@@ -230,7 +230,7 @@ def remove_diacritics(text):
 
 
 def preprocess_text(text):
-    for fn in [lambda x: x, repl_quotes, repl_lines, remove_highlight, strip_numbers, remove_diacritics]:
+    for fn in [lambda x: x, remove_highlight, repl_quotes, repl_lines, strip_numbers]:
         text = fn(text).strip()
         while '  ' in text:
             text = text.replace('  ', ' ').strip()
