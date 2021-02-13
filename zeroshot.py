@@ -25,7 +25,7 @@ def process_russe(sample):
 
 
 def process_danetqa(sample):
-    return get_words(sample["passage"]), "Ответ на вопрос " + sample["question"] + " {}", ('да',)
+    return get_words(sample["passage"]), sample["question"] + '{}', ('',)
 
 
 def process_muserc(sample):
@@ -41,7 +41,7 @@ processors = {
     data.read_russe: process_russe,
     data.read_muserc: process_muserc,
 }
-name = "zero-norm/super-qa"
+name = "zero-norm/super-proc"
 
 
 def preprocess_word(word):
@@ -54,7 +54,7 @@ def preprocess_word(word):
 
 def get_words(text):
     text = re.sub('[(]+[\dЗ\W]+[)]', '', text)
-    words = [preprocess_word(word) for word in tokenizer.tokenize(text)]
+    words = [preprocess_word(word) for word in tokenizer.tokenize(text)][:250]
     return ' '.join(words)
 
 

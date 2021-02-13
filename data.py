@@ -199,16 +199,16 @@ trans_table = dict([(ord(x), ord(y)) for x, y in zip("‘’´“”«»—–-"
 
 def repl_quotes(string):
     string = string.translate(trans_table).strip()
-    while string[0] == string[-1] == '"' and False:
+    while string[0] == string[-1] == '"':
         string = string[1:-1]
-    while '""' in string and False:
+    while '""' in string:
         string = string.replace('""', '"')
     return string
 
 
 
 def repl_lines(string):
-    return string.replace('\n', ' ').replace('\t', '')
+    return string.replace('\n', ' ')
 
 
 def remove_highlight(string):
@@ -230,7 +230,7 @@ def remove_diacritics(text):
 
 
 def preprocess_text(text):
-    for fn in [lambda x: x, remove_highlight, repl_quotes, repl_lines, strip_numbers]:
+    for fn in [lambda x: x, remove_highlight, repl_quotes, repl_lines, strip_numbers, remove_diacritics]:
         text = fn(text).strip()
         while '  ' in text:
             text = text.replace('  ', ' ').strip()
@@ -343,7 +343,7 @@ def make_df(tasks, is_tsv=False, source_only=False, **kwargs):
 
 
 if __name__ == '__main__':
-    make_df([read_danetqa], is_tsv=True, translate=True)
+    make_df([read_danetqa, read_muserc], is_tsv=True, translate=True)
     make_df([read_danetqa], source_only=True, is_tsv=True, translate=True)
     exit()
     load_all(data_funs, verbose=True, translate=True)
