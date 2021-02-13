@@ -25,9 +25,7 @@ def process_russe(sample):
 
 
 def process_danetqa(sample):
-    # print(sample)
-    # exit()
-    return get_words(sample["passage"]), sample["question"] + " {}", ('да',)
+    return get_words(sample["passage"]), "Ответ на вопрос " + sample["question"] + " {}", ('да',)
 
 
 def process_muserc(sample):
