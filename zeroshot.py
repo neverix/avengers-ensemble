@@ -54,7 +54,7 @@ def preprocess_word(word):
 
 def get_words(text):
     text = re.sub('[(]+[\dЗ\W]+[)]', '', text)
-    words = [preprocess_word(word) for word in tokenizer.tokenize(text)][:250]
+    words = [preprocess_word(word) for word in tokenizer.tokenize(text)]
     return ' '.join(words)
 
 
