@@ -91,16 +91,16 @@ models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "zero-norm/super-rcb", "silver/silver", "golden/1", "golden/2", "golden/3", "golden/4",
           "zero-norm/super-qa", "golden/danetqa", "golden/danetqa-better", "zero-norm/super-proc",
           "golden/danetqa-5000", "platinum/1", "zero56/zero", "platinum/1-fp", "platinum/1r", "platinum/1rs",
-          "gpt/medium-mrc", "golden/mix", "word/word", "qa/xlm", "qa/zero",
+          "gpt/medium-mrc", "golden/mix", "word/word", "qa/xlm", "qa/zero", "zero-norm/super-plus",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero", "mbert/mbert")[:-1]
 datasets = {
-    data.read_rwsd: (process_rwsd, "RWSD", "acc"),
+    # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
     data.read_muserc: (process_muserc, "MuSeRC", "f1"),
-    data.read_terra: (process_terra, "TERRa", "acc"),
-    data.read_rcb: (process_rcb, "RCB", "acc"),
-    data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
-    data.read_russe: (process_russe, "RUSSE", "acc"),
-    data.read_parus: (process_parus, "PARus", "acc"),
+    # data.read_terra: (process_terra, "TERRa", "acc"),
+    # data.read_rcb: (process_rcb, "RCB", "acc"),
+    # data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
+    # data.read_russe: (process_russe, "RUSSE", "acc"),
+    # data.read_parus: (process_parus, "PARus", "acc"),
     data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
 }
 metrics = dict(

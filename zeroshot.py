@@ -25,7 +25,7 @@ def process_russe(sample):
 
 
 def process_danetqa(sample):
-    return get_words(sample["passage"]), sample["question"] + '{}', ('',)
+    return get_words(sample["passage"]), f"{sample['question']} Да." + '{}', ['']
 
 
 def process_muserc(sample):
@@ -35,13 +35,13 @@ def process_muserc(sample):
 tokenizer = RegexpTokenizer(r'\d+[ ]+\d+[ ]+\d+|\d+[ ]+\d+|[a-zA-Z]+[.]+[a-zA-Z]+|[A-Z]+[a-z]+|\d+[.,:+-]+\d+|\w+')
 processors = {
     data.read_danetqa: process_danetqa,
-    data.read_terra: process_terra,
-    data.read_lidirus: process_lidirus,
-    data.read_rcb: process_rcb,
-    data.read_russe: process_russe,
+    # data.read_terra: process_terra,
+    # data.read_lidirus: process_lidirus,
+    # data.read_rcb: process_rcb,
+    # data.read_russe: process_russe,
     data.read_muserc: process_muserc,
 }
-name = "zero-norm/super-proc"
+name = "zero-norm/super-plus"
 
 
 def preprocess_word(word):
@@ -60,7 +60,7 @@ def get_words(text):
 
 def make_preds_zero_shot(model, dataset, split):
     datas = dataset(split)
-    datas = data.preprocess_dataset(datas)
+    # datas = data.preprocess_dataset(datas)
     processor = processors[dataset]
     for k, v in sorted(datas.items()):
         premise, hypothesis_template, hypotheses = processor(v)
