@@ -10,14 +10,21 @@ tokenizer = RegexpTokenizer(r'\d+[ ]+\d+[ ]+\d+|\d+[ ]+\d+|[a-zA-Z]+[.]+[a-zA-Z]
 def preprocess_word(word):
     word = word.replace(' ', '')
     word = word.replace('.', ',')
-    word = word.replace('-', ':')
+    # word = word.replace('-', ':')
 
     return word
 
 
+trans_table = dict([(ord(x), ord(y)) for x, y in zip("‘’´“”«»—–-", '""\'""""---')])
+
+
 def get_words(text):
-    text = re.sub('[(]+[\dЗ\W]+[)]', '', text)
-    words = [preprocess_word(word) for word in tokenizer.tokenize(text)]
+    text = text.translate(trans_table).strip()
+    while '  ' in text:
+        text = text.replace('  ', ' ')
+    return text
+    # text = re.sub('[(]+[\dЗ\W]+[)]', '', text)
+    words = [preprocess_word(word) for word in tokenizer.tokenize(text) if word]
     return ' '.join(words)
 
 
@@ -43,7 +50,7 @@ def main():
         print(f"Processing {split}...")
         preds = make_preds_zero_shot(split)
         print("Writing...")
-        open(f"scores/qa/en-azero.{split}.scores", 'w').write('\n'.join(map(str, preds)))
+        open(f"scores/qa/en-altzero.{split}.scores", 'w').write('\n'.join(map(str, preds)))
         # print()
         # exit()
 
