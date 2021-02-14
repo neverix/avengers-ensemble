@@ -24,7 +24,7 @@ def get_words(text):
 
 
 def main():
-    torch.set_num_threads(8)
+    # torch.set_num_threads(8)
     print("Loading model...")
     model = deberta.DeBERTa(pre_trained="xlarge-v2-mnli")
     model.apply_state()
@@ -33,12 +33,10 @@ def main():
     tokenizer = deberta.tokenizers[vocab_type](vocab_path)
 
     def make_preds_zero_shot(name):
-        preds = []
-
         json_list = list(open(f"datasets/DaNetQA/{name}.jsonl"))
         table = json.load(open("translations/translation.json"))
 
-        for json_str in tqdm(json_list):
+        for i, json_str in enumerate(tqdm(json_list)):
             result = json.loads(json_str)
 
             premise_tokens = tokenizer.tokenize(get_words(table[result["passage"].strip()]))
@@ -46,15 +44,12 @@ def main():
             all_tokens = ['[CLS]'] + premise_tokens + ['[SEP]'] + hypothesis_tokens + ['[SEP]']
             input_ids = tokenizer.convert_tokens_to_ids(all_tokens[:512])
             state = model(torch.LongTensor([input_ids]))[-1][0]
-            preds.append(state)
 
-        return preds
+            torch.save(state, f"states/platinum/xlarge/{result['idx']}.pt")
 
     for split in ("val", "test"):
         print(f"Processing {split}...")
-        preds = make_preds_zero_shot(split)
-        print("Writing...")
-        torch.save(preds, "states/platinum/xlarge.pt")
+        make_preds_zero_shot(split)
 
 
 if __name__ == '__main__':
