@@ -8,7 +8,7 @@ def process(name):
     result = []
     for json_str in json_list:
         line = json.loads(json_str)
-        text = f"{line['question']} [SEP] {get_words(line['passage'])}"
+        text = f"question: {line['question']} passage: {get_words(line['passage'])}"
         result.append('\t'.join((text, str(line.get("label", 0)))))
 
     open(f"datasets/danetqa_{name}.tsv", 'w').write('\n'.join(result))
