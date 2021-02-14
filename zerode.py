@@ -1,8 +1,9 @@
 import re
 import json
 from nltk.tokenize import RegexpTokenizer
-from transformers import pipeline
 from DeBERTa.DeBERTa import deberta
+import torch
+from tqdm import tqdm
 
 
 tokenizer = RegexpTokenizer(r'\d+[ ]+\d+[ ]+\d+|\d+[ ]+\d+|[a-zA-Z]+[.]+[a-zA-Z]+|[A-Z]+[a-z]+|\d+[.,:+-]+\d+|\w+')
@@ -23,10 +24,13 @@ def get_words(text):
 
 
 def main():
-    model = deberta.DeBERTa(pre_trained="base-mnli")
-    vocab_path, vocab_type = deberta.load_vocab(pretrained_id="large-mnli")
+    torch.set_num_threads(8)
+    print("Loading model...")
+    model = deberta.DeBERTa(pre_trained="xlarge-v2-mnli")
+    model.apply_state()
+    print("Loading tokenizer...")
+    vocab_path, vocab_type = deberta.load_vocab(pretrained_id="xlarge-v2-mnli")
     tokenizer = deberta.tokenizers[vocab_type](vocab_path)
-    exit()
 
     def make_preds_zero_shot(name):
         preds = []
@@ -34,17 +38,15 @@ def main():
         json_list = list(open(f"datasets/DaNetQA/{name}.jsonl"))
         table = json.load(open("translations/translation.json"))
 
-        for json_str in json_list:
+        for json_str in tqdm(json_list):
             result = json.loads(json_str)
 
             premise_tokens = tokenizer.tokenize(get_words(table[result["passage"].strip()]))
             hypothesis_tokens = tokenizer.tokenize(table[result["question"].strip()] + " Yes.")
             all_tokens = ['[CLS]'] + premise_tokens + ['[SEP]'] + hypothesis_tokens + ['[SEP]']
             input_ids = tokenizer.convert_tokens_to_ids(all_tokens[:512])
-
-            # cl_preds = classifier(, [''],
-            #                       multi_class=False, hypothesis_template=f"{table[result['question'].strip()]} Yes." + '{}')
-            preds.append(0['scores'][0])
+            state = model(torch.LongTensor([input_ids]))[-1][0]
+            preds.append(state)
 
         return preds
 
@@ -52,9 +54,7 @@ def main():
         print(f"Processing {split}...")
         preds = make_preds_zero_shot(split)
         print("Writing...")
-        open(f"scores/qa/en-azero.{split}.scores", 'w').write('\n'.join(map(str, preds)))
-        # print()
-        # exit()
+        torch.save(preds, "states/platinum/xlarge.pt")
 
 
 if __name__ == '__main__':
