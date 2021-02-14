@@ -6,6 +6,7 @@ outputs/
 AutogluonModels/
 cache_dir/
 translations/
+DeBERTa/
 .idea/
 
 # Byte-compiled / optimized / DLL files
