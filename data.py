@@ -285,7 +285,7 @@ def preprocess_bert(sample, fn, single=False):
 def replace_table(sample, table=None):
     if table is None:
         table = {}
-    return {key: (table[value] if isinstance(key, str) and key not in ("idx", "misc", "label") else value)
+    return {key: (table[value.strip()] if isinstance(key, str) and key not in ("idx", "misc", "label") else value)
             for key, value in sample.items()}
 
 
@@ -300,6 +300,7 @@ data_funs = (read_lidirus, read_rcb, read_parus,  # read_parus_nonnli,
              read_muserc, read_terra, read_russe, read_rwsd, read_danetqa,  # read_rucos_nli,  # read_rucos
              )
 translation_path = "translations/translation.json"
+dont_process = (read_danetqa,)
 
 
 def load_all(tasks=data_funs, verbose=False, translate=False):
@@ -314,7 +315,10 @@ def load_all(tasks=data_funs, verbose=False, translate=False):
                 # splits[split] += [('0', 0) for _ in src]
                 continue
             src = fn(split)
-            dataset = preprocess_dataset(src)
+            if fn not in dont_process:
+                dataset = preprocess_dataset(src)
+            else:
+                dataset = src
             if translate:
                 table = translator.translate_all(to_translate(dataset), translation_path)
                 dataset = preprocess_dataset(dataset, fun=partial(replace_table, table=table))
@@ -343,7 +347,7 @@ def make_df(tasks, is_tsv=False, source_only=False, **kwargs):
 
 
 if __name__ == '__main__':
-    make_df([read_danetqa, read_muserc], is_tsv=True, translate=True)
+    make_df([read_danetqa], is_tsv=True, translate=True)
     make_df([read_danetqa], source_only=True, is_tsv=True, translate=True)
     exit()
     load_all(data_funs, verbose=True, translate=True)
