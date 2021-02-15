@@ -315,7 +315,7 @@ def load_all(tasks=data_funs, verbose=False, translate=False):
                 # splits[split] += [('0', 0) for _ in src]
                 continue
             src = fn(split)
-            if fn not in dont_process:
+            if fn not in dont_process or True:
                 dataset = preprocess_dataset(src)
             else:
                 dataset = src
