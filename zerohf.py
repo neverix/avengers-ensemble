@@ -1,7 +1,7 @@
 import re
 from tqdm import tqdm
 from nltk.tokenize import RegexpTokenizer
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoConfig
 import data
 import torch
 from torch.nn import functional as F
@@ -44,7 +44,7 @@ processors = {
     # data.read_russe: process_russe,
     # data.read_muserc: process_muserc,
 }
-name = "zerode/en"
+name = "zerode/de"
 
 
 def preprocess_word(word):
@@ -80,9 +80,11 @@ def make_preds_zero_shot(model, tokenizer, dataset, table, split):
 def main():
     torch.set_grad_enabled(False)
     print("loading model")
-    model_name = "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
+    model_name = "microsoft/deberta-large-mnli"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForSequenceClassification.from_pretrained(model_name).cuda()
+    config = AutoConfig.from_pretrained(model_name)
+    config.num_labels = 3
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, config=config).cuda()
     print("model loaded")
     table = json.load(open("translations/translation.json"))
     for split in ("val", "test"):
