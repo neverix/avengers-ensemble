@@ -20,12 +20,11 @@ def subset_sum(dct, target):
                 return comb
 
 
-def read_split(model, split):
+def read_split(datasets, model, split):
     lines = list(map(ast.literal_eval, open(f"scores/{model}.{split}.scores")))
     lines = [x if isinstance(x, tuple) else (x,) for x in lines]
 
     length = len(lines)
-    datasets = {fn: fn(split) for fn in data.data_funs}
     lens = {key: len(val) for key, val in datasets.items()}
     print("Solving subset sum...")
     for length_ in range(length+1, length-1, -1):
@@ -71,8 +70,18 @@ def process_parus(_dataset, _preds, probs):
     return result
 
 
-def process_danetqa(_dataset, preds, _probs):
-    return [{"idx": k, "label": [False, True][int(v)]} for k, v in preds.items()]
+def process_danetqa(dataset, _preds, probs):
+    _, source = dataset
+    _, dataset, _ = source[(data.read_danetqa, "test")]
+    questions = {}
+    for sample, prob in zip(dataset.values(), probs.values()):
+        question = sample["question"]
+        if question not in questions:
+            questions[question] = []
+        questions[question].append(prob)
+    questions = {k: sum(v) / len(v) for k, v in questions.items()}
+    probs = {k: (questions[s["question"]]) for (k, v), s in zip(probs.items(), dataset.values())}
+    return [{"idx": k, "label": v > 0.5} for k, v in probs.items()]
 
 
 def process_muserc(_dataset, preds, _probs):
@@ -93,11 +102,11 @@ models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "golden/danetqa-5000", "platinum/1", "zero56/zero", "platinum/1-fp", "platinum/1r", "platinum/1rs",
           "gpt/medium-mrc", "golden/mix", "word/word", "qa/xlm", "qa/zero", "zero-norm/super-plus", "qa/en-zero",
           "qa/en-altzero", # "zerode/xlarge",
-          "zerode/xlm",
+          "zerode/xlm", "golden/mix-5000",  # "golden/nop",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero", "mbert/mbert")[:-1]
 datasets = {
     # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
-    data.read_muserc: (process_muserc, "MuSeRC", "f1"),
+    # data.read_muserc: (process_muserc, "MuSeRC", "f1"),
     # data.read_terra: (process_terra, "TERRa", "acc"),
     # data.read_rcb: (process_rcb, "RCB", "acc"),
     # data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
@@ -115,8 +124,9 @@ metrics = dict(
 def make_feats(dataset):
     preds = {}
     for split in ("val", "test"):
+        datasets = {fn: fn(split) for fn in data.data_funs}
         for model in models:
-            preds[(model, split)] = read_split(model, split)
+            preds[(model, split)] = read_split(datasets, model, split)
     print("Got features.")
 
     splits, source = dataset
