@@ -6,6 +6,9 @@ import data
 import torch
 from torch.nn import functional as F
 import json
+from DeBERTa.DeBERTa import deberta
+from DeBERTa.DeBERTa.deberta.cache_utils import load_model_state
+from DeBERTa.DeBERTa.apps.models.sequence_classification import SequenceClassificationModel
 
 
 def process_terra(sample):
@@ -44,7 +47,7 @@ processors = {
     # data.read_russe: process_russe,
     # data.read_muserc: process_muserc,
 }
-name = "zerode/de"
+name = "zerode/dex"
 
 
 def preprocess_word(word):
@@ -64,27 +67,27 @@ def get_words(text):
 def make_preds_zero_shot(model, tokenizer, dataset, table, split):
     datas = dataset(split)
     # datas = data.preprocess_dataset(datas)
-    processor = processors[dataset]
-    cls = torch.LongTensor([[tokenizer.cls_token_id]])
-    sep = torch.LongTensor([[tokenizer.sep_token_id]])
     tokenize = lambda x: tokenizer(x, add_special_tokens=False, return_tensors='pt', max_length=512, truncation=True).input_ids
     for k, v in sorted(datas.items()):
         # torch.cuda.empty_cache()
-        passage = get_words(table[v["passage"].strip()])
-        hypothesis = table[v["question"].strip()] + " Yes."
-        tokens = torch.cat((cls, tokenize(passage), sep, tokenize(hypothesis), sep), dim=1)
-        tokens = tokens.to(model.device)
-        yield tuple(float(x) for x in F.softmax(model(tokens).logits.flatten()))
+        premise_tokens = tokenizer.tokenize(get_words(table[v["passage"].strip()]))
+        hypothesis_tokens = tokenizer.tokenize(table[v["question"].strip()] + " Yes.")
+        all_tokens = ['[CLS]'] + premise_tokens + ['[SEP]'] + hypothesis_tokens + ['[SEP]']
+        input_ids = tokenizer.convert_tokens_to_ids(all_tokens[:512])
+        logits, _ = model(torch.LongTensor([input_ids]))
+        yield tuple(float(x) for x in F.softmax(logits.flatten()))
 
 
 def main():
     torch.set_grad_enabled(False)
-    print("loading model")
-    model_name = "microsoft/deberta-large-mnli"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    config = AutoConfig.from_pretrained(model_name)
-    config.num_labels = 3
-    model = AutoModelForSequenceClassification.from_pretrained(model_name, config=config).cuda()
+    model_name = "xlarge-v2-mnli"
+    print("Loading model...")
+    _, model_config = load_model_state(model_name)
+    model = SequenceClassificationModel(model_config, pre_trained=model_name)
+    # model.apply_state()
+    print("Loading tokenizer...")
+    vocab_path, vocab_type = deberta.load_vocab(pretrained_id=model_name)
+    tokenizer = deberta.tokenizers[vocab_type](vocab_path)
     print("model loaded")
     table = json.load(open("translations/translation.json"))
     for split in ("val", "test"):
