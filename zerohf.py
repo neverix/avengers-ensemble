@@ -5,6 +5,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import data
 import torch
 from torch.nn import functional as F
+import json
 
 
 def process_terra(sample):
@@ -43,7 +44,7 @@ processors = {
     # data.read_russe: process_russe,
     # data.read_muserc: process_muserc,
 }
-name = "zerode/xlm"
+name = "zerode/en"
 
 
 def preprocess_word(word):
@@ -60,7 +61,7 @@ def get_words(text):
     return ' '.join(words)
 
 
-def make_preds_zero_shot(model, tokenizer, dataset, split):
+def make_preds_zero_shot(model, tokenizer, dataset, table, split):
     datas = dataset(split)
     # datas = data.preprocess_dataset(datas)
     processor = processors[dataset]
@@ -68,31 +69,29 @@ def make_preds_zero_shot(model, tokenizer, dataset, split):
     sep = torch.LongTensor([[tokenizer.sep_token_id]])
     tokenize = lambda x: tokenizer(x, add_special_tokens=False, return_tensors='pt', max_length=512, truncation=True).input_ids
     for k, v in sorted(datas.items()):
-        premise, hypothesis_template, hypotheses = processor(v)
-        scores = []
-        for hypothesis in hypotheses:
-            # torch.cuda.empty_cache()
-            hypothesis = hypothesis_template.format(hypothesis)
-            tokens = torch.cat((cls, tokenize(premise), sep, tokenize(hypothesis), sep), dim=1)
-            tokens = tokens.to(model.device)
-            scores += [float(x) for x in F.softmax(model(tokens).logits.flatten())]
-        yield tuple(scores)
+        # torch.cuda.empty_cache()
+        passage = get_words(table[v["passage"].strip()])
+        hypothesis = table[v["question"].strip()] + " Yes."
+        tokens = torch.cat((cls, tokenize(passage), sep, tokenize(hypothesis), sep), dim=1)
+        tokens = tokens.to(model.device)
+        yield tuple(float(x) for x in F.softmax(model(tokens).logits.flatten()))
 
 
 def main():
     torch.set_grad_enabled(False)
     print("loading model")
-    model_name = "vicgalle/xlm-roberta-large-xnli-anli"
+    model_name = "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSequenceClassification.from_pretrained(model_name).cuda()
     print("model loaded")
+    table = json.load(open("translations/translation.json"))
     for split in ("val", "test"):
         print("processing", split)
         results = []
         for dataset in data.data_funs:
             if dataset in processors:
                 print(" computing", dataset.__name__)
-                preds = make_preds_zero_shot(model, tokenizer, dataset, split)
+                preds = make_preds_zero_shot(model, tokenizer, dataset, table, split)
                 for pred in tqdm(preds, total=len(dataset(split))):
                     results.append(pred)
         print(" writing")

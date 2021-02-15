@@ -26,20 +26,19 @@ def read_split(datasets, model, split):
 
     length = len(lines)
     lens = {key: len(val) for key, val in datasets.items()}
-    print("Solving subset sum...")
+    # print("Solving subset sum...")
     for length_ in range(length+1, length-1, -1):
         comb = subset_sum(lens, length_)
         if comb is not None:
             # print(model, length, length_)
             break
     assert comb is not None
-    print("Solved!")
+    # print("Solved!")
     funs = [fn for fn in data.data_funs if fn in comb]
 
     results = {}
     for fn in funs:
-        dataset = fn(split)
-        datas = data.preprocess_dataset(dataset)
+        datas = datasets[fn]
         keys = sorted(datas.keys())
         results[fn] = dict(zip(keys, lines[:len(datas)]))
         lines = lines[len(datas):]
@@ -80,7 +79,7 @@ def process_danetqa(dataset, _preds, probs):
             questions[question] = []
         questions[question].append(prob)
     questions = {k: sum(v) / len(v) for k, v in questions.items()}
-    probs = {k: (questions[s["question"]]) for (k, v), s in zip(probs.items(), dataset.values())}
+    # probs = {k: (questions[s["question"]]) for (k, v), s in zip(probs.items(), dataset.values())}
     return [{"idx": k, "label": v > 0.5} for k, v in probs.items()]
 
 
@@ -101,8 +100,8 @@ models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "zero-norm/super-qa", "golden/danetqa", "golden/danetqa-better", "zero-norm/super-proc", "qa/en-azero",
           "golden/danetqa-5000", "platinum/1", "zero56/zero", "platinum/1-fp", "platinum/1r", "platinum/1rs",
           "gpt/medium-mrc", "golden/mix", "word/word", "qa/xlm", "qa/zero", "zero-norm/super-plus", "qa/en-zero",
-          "qa/en-altzero", # "zerode/xlarge",
-          "zerode/xlm", "golden/mix-5000", "56/feats", # "golden/nop",
+          "qa/en-altzero",  # "zerode/xlarge",
+          "zerode/xlm", "golden/mix-5000", "56/feats", "zerode/en",  # "golden/nop",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero", "mbert/mbert")[:-1]
 datasets = {
     # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
