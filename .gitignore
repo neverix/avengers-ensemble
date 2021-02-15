@@ -8,6 +8,7 @@ cache_dir/
 translations/
 DeBERTa/
 states/
+lightning_logs/
 .idea/
 
 # Byte-compiled / optimized / DLL files

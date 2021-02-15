@@ -25,6 +25,7 @@ def get_words(text):
 
 def main():
     # torch.set_num_threads(8)
+    torch.set_grad_enabled(False)
     print("Loading model...")
     model = deberta.DeBERTa(pre_trained="xlarge-v2-mnli")
     model.apply_state()
@@ -45,7 +46,7 @@ def main():
             input_ids = tokenizer.convert_tokens_to_ids(all_tokens[:512])
             state = model(torch.LongTensor([input_ids]))[-1][0]
 
-            torch.save(state, f"states/platinum/xlarge/{name}-{result['idx']}.pt")
+            torch.save(state, f"states/platinum/xlarge/{name}/{result['idx']}.pt")
 
     for split in ("train", "val", "test"):
         print(f"Processing {split}...")
