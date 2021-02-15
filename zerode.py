@@ -45,9 +45,9 @@ def main():
             input_ids = tokenizer.convert_tokens_to_ids(all_tokens[:512])
             state = model(torch.LongTensor([input_ids]))[-1][0]
 
-            torch.save(state, f"states/platinum/xlarge/{result['idx']}.pt")
+            torch.save(state, f"states/platinum/xlarge/{name}-{result['idx']}.pt")
 
-    for split in ("val", "test"):
+    for split in ("train", "val", "test"):
         print(f"Processing {split}...")
         make_preds_zero_shot(split)
 
