@@ -256,7 +256,12 @@ replacements = dict(
 do_replace = False
 is_upper = False
 mapping = {
-    read_danetqa: "boolq"
+    read_danetqa: "boolq",
+    read_rucos: "record",
+    read_rcb: "cb",
+    read_parus: "copa",
+    read_muserc: "multirc",
+    read_terra: "rte"
 }
 
 
@@ -347,8 +352,9 @@ def make_df(tasks, is_tsv=False, source_only=False, **kwargs):
 
 
 if __name__ == '__main__':
-    make_df([read_danetqa], is_tsv=True, translate=True)
-    make_df([read_danetqa], source_only=True, is_tsv=True, translate=True)
+    datas = [read_danetqa, read_rucos, read_rcb, read_parus, read_muserc, read_terra]
+    make_df(datas, is_tsv=True, translate=True)
+    make_df(datas, source_only=True, is_tsv=True, translate=True)
     exit()
     load_all(data_funs, verbose=True, translate=True)
     exit()
