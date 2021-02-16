@@ -47,7 +47,7 @@ processors = {
     # data.read_russe: process_russe,
     # data.read_muserc: process_muserc,
 }
-name = "zerode/den"
+name = "zerode/del"
 
 
 def preprocess_word(word):
@@ -81,7 +81,7 @@ def main():
     model_name = "xlarge-v2-mnli"
     print("Loading model...")
     _, model_config = load_model_state(model_name)
-    model = SequenceClassificationModel(model_config, pre_trained=model_name)
+    model = SequenceClassificationModel(model_config, num_labels=3, drop_out=0.0, pre_trained=model_name)
     # model.apply_state()
     print("Loading tokenizer...")
     vocab_path, vocab_type = deberta.load_vocab(pretrained_id=model_name)
