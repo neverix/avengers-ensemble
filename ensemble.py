@@ -7,6 +7,8 @@ import ast
 import itertools
 from sklearn.metrics import matthews_corrcoef, accuracy_score, f1_score
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from tqdm import tqdm
 from cache import mem
 import warnings
 from muserc import write_muserc, strip_muserc
@@ -102,7 +104,7 @@ models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "gpt/medium-mrc", "golden/mix", "word/word", "qa/xlm", "qa/zero", "zero-norm/super-plus", "qa/en-zero",
           "qa/en-altzero",  # "zerode/xlarge",
           "zerode/xlm", "golden/mix-5000", "56/feats", "zerode/en", "zerode/de", "zerode/dex",  # "golden/nop",
-          "golden-nop/nop", # "golden-nop/mix", "golden-yep/mix", "golden-yep/nop",
+          "golden-nop/nop", "zerode/dexx", "zerode/den",  "golden-nop/mix", "golden-yep/mix", "golden-yep/nop",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero", "mbert/mbert")[:-1]
 datasets = {
     # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
@@ -194,10 +196,10 @@ def best_features(x_test, y_test, metric=accuracy_score):
     all_feats = x_test.columns
     real_feats = set('_'.join(feat.split('_')[:-1]) if feat[-1].isdigit() and '_' in feat else feat for feat in all_feats)
     feats = []
-    for feat in real_feats:
+    for feat in tqdm(real_feats):
         related = [x for x in all_feats if x.startswith(feat + '_')]
         x_rel = x_test[related].fillna(0)
-        model = LogisticRegression()
+        model = LogisticRegression(C=1e56)  #  RandomForestClassifier(n_estimators=16, max_depth=2)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             model.fit(x_rel, y_test)

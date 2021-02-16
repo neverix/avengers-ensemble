@@ -47,7 +47,7 @@ processors = {
     # data.read_russe: process_russe,
     # data.read_muserc: process_muserc,
 }
-name = "zerode/dexx"
+name = "zerode/den"
 
 
 def preprocess_word(word):
@@ -66,8 +66,6 @@ def get_words(text):
 
 def make_preds_zero_shot(model, tokenizer, dataset, table, split):
     datas = dataset(split)
-    # datas = data.preprocess_dataset(datas)
-    tokenize = lambda x: tokenizer(x, add_special_tokens=False, return_tensors='pt', max_length=512, truncation=True).input_ids
     for k, v in sorted(datas.items()):
         # torch.cuda.empty_cache()
         premise_tokens = tokenizer.tokenize(get_words(table[v["passage"].strip()]))
@@ -75,12 +73,12 @@ def make_preds_zero_shot(model, tokenizer, dataset, table, split):
         all_tokens = ['[CLS]'] + premise_tokens + ['[SEP]'] + hypothesis_tokens + ['[SEP]']
         input_ids = tokenizer.convert_tokens_to_ids(all_tokens[:512])
         logits, _ = model(torch.LongTensor([input_ids]))
-        yield tuple(float(x) for x in F.softmax(logits.flatten()))
+        yield tuple(float(x) for x in logits.flatten())
 
 
 def main():
     torch.set_grad_enabled(False)
-    model_name = "xxlarge-v2-mnli"
+    model_name = "xlarge-v2-mnli"
     print("Loading model...")
     _, model_config = load_model_state(model_name)
     model = SequenceClassificationModel(model_config, pre_trained=model_name)
