@@ -105,16 +105,18 @@ models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "qa/en-altzero", "zerode/del", "train/xlm", "train/bert", "zerode/delx",  # "zerode/xlarge",
           "zerode/xlm", "golden/mix-5000", "56/feats", "zerode/en", "zerode/de", "zerode/dex",  # "golden/nop",
           "golden-nop/nop", "zerode/dexx", "zerode/den", "golden-nop/mix", "golden-yep/mix", "golden-yep/nop",
-          "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero", "mbert/mbert")[:-1]
+          "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero",
+          "mbert/mbert", "train/xlm-multirc"
+          )
 datasets = {
     # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
-    # data.read_muserc: (process_muserc, "MuSeRC", "f1"),
+    data.read_muserc: (process_muserc, "MuSeRC", "f1"),
     # data.read_terra: (process_terra, "TERRa", "acc"),
     # data.read_rcb: (process_rcb, "RCB", "acc"),
     # data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
     # data.read_russe: (process_russe, "RUSSE", "acc"),
     # data.read_parus: (process_parus, "PARus", "acc"),
-    data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
+    # data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
 }
 metrics = dict(
     f1=f1_score,
