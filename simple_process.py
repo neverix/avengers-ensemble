@@ -2,7 +2,7 @@ from zeronew import get_words
 import json
 
 
-def process(name):
+def process_danetqa(name):
     with open(f"datasets/DaNetQA/{name}.jsonl") as fin:
         json_list = list(fin)
     result = []
@@ -14,8 +14,24 @@ def process(name):
     open(f"datasets/danetqa_{name}.tsv", 'w').write('\n'.join(result))
 
 
+def process_muserc(name):
+    with open(f"datasets/MuSeRC/{name}.jsonl") as fin:
+        json_list = list(map(json.loads, fin))
+    result = []
+    for passage in json_list:
+        passage = passage["passage"]
+        text = passage["text"]
+        questions = passage["questions"]
+        for question in questions:
+            q = question["question"]
+            for answer in question["answers"]:
+                txt = f"question: {q} answer: {answer['text']} passage: {text}"
+                result.append('\t'.join((txt, str(answer.get("label", 0)))))
+    open(f"datasets/muserc_{name}.tsv", 'w').write('\n'.join(result))
+
+
 if __name__ == '__main__':
     for split in ("train", "val", "test"):
         print(split)
-        process(split)
+        process_muserc(split)
     print("done")
