@@ -106,7 +106,8 @@ models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "zerode/xlm", "golden/mix-5000", "56/feats", "zerode/en", "zerode/de", "zerode/dex",  # "golden/nop",
           "golden-nop/nop", "zerode/dexx", "zerode/den", "golden-nop/mix", "golden-yep/mix", "golden-yep/nop",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero",
-          "mbert/mbert", "train/xlm-multirc"
+          # "mbert/mbert",
+          "train/xlm-multirc", "train/xlm-multirc-better",
           )
 datasets = {
     # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
