@@ -29,7 +29,7 @@ def read_split(datasets, model, split):
     length = len(lines)
     lens = {key: len(val) for key, val in datasets.items()}
     # print("Solving subset sum...")
-    for length_ in range(length+1, length-1, -1):
+    for length_ in range(length+1, length-2, -1):
         comb = subset_sum(lens, length_)
         if comb is not None:
             # print(model, length, length_)
@@ -97,7 +97,7 @@ def process_rwsd(_dataset, preds, _probs):
     return [{"idx": k, "label": [False, True][int(v)]} for k, v in preds.items()]
 
 
-models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb", "zero-norm/super",
+models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb", "zero-norm/super",
           "zero-norm/super-rcb", "silver/silver", "golden/1", "golden/2", "golden/3", "golden/4",
           "zero-norm/super-qa", "golden/danetqa", "golden/danetqa-better", "zero-norm/super-proc", "qa/en-azero",
           "golden/danetqa-5000", "platinum/1", "zero56/zero", "platinum/1-fp", "platinum/1r", "platinum/1rs",
@@ -107,17 +107,19 @@ models = ("xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "golden-nop/nop", "zerode/dexx", "zerode/den", "golden-nop/mix", "golden-yep/mix", "golden-yep/nop",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero",
           # "mbert/mbert",
-          "train/xlm-multirc", "train/xlm-multirc-better",
-          )
+          "train/xlm-multirc", "train/xlm-multirc-better", "qa/en-albzero",
+          ]
+for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"]:
+    models.append(f"all/all-{step}")
 datasets = {
     # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
     data.read_muserc: (process_muserc, "MuSeRC", "f1"),
-    # data.read_terra: (process_terra, "TERRa", "acc"),
-    # data.read_rcb: (process_rcb, "RCB", "acc"),
-    # data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
+    data.read_terra: (process_terra, "TERRa", "acc"),
+    data.read_rcb: (process_rcb, "RCB", "acc"),
+    data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
     # data.read_russe: (process_russe, "RUSSE", "acc"),
-    # data.read_parus: (process_parus, "PARus", "acc"),
-    # data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
+    data.read_parus: (process_parus, "PARus", "acc"),
+    data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
 }
 metrics = dict(
     f1=f1_score,

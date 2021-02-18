@@ -29,7 +29,7 @@ def get_words(text):
 
 
 def main():
-    classifier = pipeline("zero-shot-classification", model="ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli", device=0)
+    classifier = pipeline("zero-shot-classification", model="ynie/albert-xxlarge-v2-snli_mnli_fever_anli_R1_R2_R3-nli", device=0)
 
     def make_preds_zero_shot(name):
         preds = []
@@ -50,7 +50,7 @@ def main():
         print(f"Processing {split}...")
         preds = make_preds_zero_shot(split)
         print("Writing...")
-        open(f"scores/qa/en-altzero.{split}.scores", 'w').write('\n'.join(map(str, preds)))
+        open(f"scores/qa/en-albzero.{split}.scores", 'w').write('\n'.join(map(str, preds)))
         # print()
         # exit()
 
