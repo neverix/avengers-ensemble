@@ -78,7 +78,7 @@ def make_preds_zero_shot(model, tokenizer, dataset, table, split):
 
 def main():
     torch.set_grad_enabled(False)
-    model_name = "xxlarge-v2-mnli"
+    model_name = "xlarge-v2-mnli"
     print("Loading model...")
     _, model_config = load_model_state(model_name)
     model = SequenceClassificationModel(model_config, num_labels=3, drop_out=0.0, pre_trained=model_name)
