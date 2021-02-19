@@ -108,7 +108,7 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "golden-nop/nop", "zerode/dexx", "zerode/den", "golden-nop/mix", "golden-yep/mix", "golden-yep/nop",
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero",
           # "mbert/mbert",
-          "train/xlm-multirc", "train/xlm-multirc-better", "qa/en-albzero",
+          "train/xlm-multirc", "train/xlm-multirc-better", "qa/en-albzero", "train/xlm-danetqa"
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
@@ -123,7 +123,7 @@ datasets = {
     # data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
     # data.read_russe: (process_russe, "RUSSE", "acc"),
     # data.read_parus: (process_parus, "PARus", "acc"),
-    # data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
+    data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
 }
 metrics = dict(
     f1=f1_score,

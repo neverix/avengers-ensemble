@@ -338,7 +338,7 @@ def load_all(tasks=data_funs, verbose=False, translate=False):
     return splits, source
 
 
-def make_df(tasks, is_tsv=False, source_only=False, **kwargs):
+def make_df(tasks, is_tsv=False, is_pkl=False, source_only=False, **kwargs):
     tsv_params = dict(sep="\t", quoting=csv.QUOTE_NONE)
     print("Preprocessing", tasks)
     splits, source = load_all(tasks, verbose=True, **kwargs)
@@ -347,13 +347,18 @@ def make_df(tasks, is_tsv=False, source_only=False, **kwargs):
         df = pd.DataFrame(df)
         if source_only:
             df.drop(columns=[df.columns[-1]], inplace=True)
-        df.to_csv(f"datasets/{file_name}{name}.{'txt' if source_only else 'tsv' if is_tsv else 'csv'}",
-                                header=False, index=False, **(tsv_params if is_tsv else {}))
+        name = f"datasets/{file_name}{name}.{'pkl' if is_pkl else 'txt' if source_only else 'tsv' if is_tsv else 'csv'}"
+        if is_pkl:
+            df.to_pickle(name, protocol=4)
+        else:
+            df.to_csv(name, header=False, index=False, **(tsv_params if is_tsv else {}))
 
 
 if __name__ == '__main__':
-    make_df([read_muserc], is_tsv=True)
-    make_df([read_muserc], source_only=True, is_tsv=True)
+    make_df([read_danetqa], is_pkl=True)
+    exit()
+    make_df([read_muserc], is_pkl=True, translate=True)
+    make_df([read_muserc], source_only=True, is_pkl=True, translate=True)
     exit()
     make_df([read_danetqa], is_tsv=True)
     make_df([read_danetqa], source_only=True, is_tsv=True)
