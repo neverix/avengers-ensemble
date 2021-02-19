@@ -1,5 +1,6 @@
 from zeronew import get_words
 import json
+import pandas as pd
 
 
 def process_danetqa(name):
@@ -26,8 +27,9 @@ def process_muserc(name):
             q = question["question"]
             for answer in question["answers"]:
                 txt = f"question: {q} answer: {answer['text']} passage: {text}"
-                result.append('\t'.join((txt, str(answer.get("label", 0)))))
-    open(f"datasets/muserc_{name}.tsv", 'w').write('\n'.join(result))
+                result.append((txt, str(answer.get("label", 0))))
+    df = pd.DataFrame(result)
+    df.to_pickle(f"datasets/muserc_{name}.pkl", protocol=4)
 
 
 if __name__ == '__main__':

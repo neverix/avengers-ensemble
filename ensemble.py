@@ -8,6 +8,7 @@ import itertools
 from sklearn.metrics import matthews_corrcoef, accuracy_score, f1_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+import os
 from tqdm import tqdm
 from cache import mem
 import warnings
@@ -109,17 +110,20 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           # "mbert/mbert",
           "train/xlm-multirc", "train/xlm-multirc-better", "qa/en-albzero",
           ]
-for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"]:
+for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
+files = set(x.split('.')[0] for x in os.listdir("scores/all-step"))
+for file in files:
+    models.append(f"all-step/{file}")
 datasets = {
     # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
     data.read_muserc: (process_muserc, "MuSeRC", "f1"),
-    data.read_terra: (process_terra, "TERRa", "acc"),
-    data.read_rcb: (process_rcb, "RCB", "acc"),
-    data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
+    # data.read_terra: (process_terra, "TERRa", "acc"),
+    # data.read_rcb: (process_rcb, "RCB", "acc"),
+    # data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
     # data.read_russe: (process_russe, "RUSSE", "acc"),
-    data.read_parus: (process_parus, "PARus", "acc"),
-    data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
+    # data.read_parus: (process_parus, "PARus", "acc"),
+    # data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
 }
 metrics = dict(
     f1=f1_score,
