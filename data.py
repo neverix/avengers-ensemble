@@ -355,7 +355,7 @@ def make_df(tasks, is_tsv=False, is_pkl=False, source_only=False, **kwargs):
 
 
 if __name__ == '__main__':
-    make_df([read_danetqa], is_pkl=True)
+    make_df([read_muserc, read_danetqa], is_pkl=True)
     exit()
     make_df([read_muserc], is_pkl=True, translate=True)
     make_df([read_muserc], source_only=True, is_pkl=True, translate=True)

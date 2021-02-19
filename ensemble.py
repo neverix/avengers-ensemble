@@ -118,11 +118,11 @@ for file in files:
 datasets = {
     # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
     data.read_muserc: (process_muserc, "MuSeRC", "f1"),
-    # data.read_terra: (process_terra, "TERRa", "acc"),
-    # data.read_rcb: (process_rcb, "RCB", "acc"),
+    data.read_terra: (process_terra, "TERRa", "acc"),
+    data.read_rcb: (process_rcb, "RCB", "acc"),
     # data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
     # data.read_russe: (process_russe, "RUSSE", "acc"),
-    # data.read_parus: (process_parus, "PARus", "acc"),
+    data.read_parus: (process_parus, "PARus", "acc"),
     data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
 }
 metrics = dict(
