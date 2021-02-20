@@ -109,7 +109,7 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero",
           # "mbert/mbert",
           "train/xlm-multirc", "train/xlm-multirc-better", "qa/en-albzero", "train/xlm-danetqa", "train/xlm-both",
-          'train/xlm-many'
+          'train/xlm-many', "train/rb-both"
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
