@@ -275,7 +275,10 @@ def preprocess_bert(sample, fn, single=False):
     label = sample["label"]
     sample = {key: value for key, value in sample.items() if key not in ("idx", "misc", "label")}
     fragments = []
-    for key in sorted(sample.keys(), key=lambda x: sort_order.index(x)):
+    order = sort_order
+    if fn == read_danetqa:
+        order = list(reversed(order))
+    for key in sorted(sample.keys(), key=lambda x: order.index(x)):
         name = key
         if do_replace:
             name = replacements[name]
