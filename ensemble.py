@@ -75,7 +75,8 @@ def process_parus(_dataset, _preds, probs):
     return result
 
 
-def process_danetqa(dataset, _preds, probs):
+def process_danetqa(dataset, preds, probs):
+    return [{"idx": k, "label": bool(v)} for k, v in preds.items()]
     _, source = dataset
     _, dataset, _ = source[(data.read_danetqa, "test")]
     questions = {}
@@ -173,6 +174,7 @@ def x_y(feats):
 
 
 def ensemble_predictions(train, splits, metric):
+    # '''
     x, y = x_y(train)
     x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=56, shuffle=False, test_size=0.3)
     for split in splits:
@@ -185,9 +187,10 @@ def ensemble_predictions(train, splits, metric):
         split = splits[name]
         classes, probs = np.argmax(probs, axis=1), probs
         if probs.shape[1] == 2:
-            probs = probs[:, 1]
-        predictions_ensemble[name] = dict(zip(split.keys(), classes)), dict(zip(split.keys(), probs))
+            probs = probs[:, :1]
+        predictions_ensemble[name] = dict(zip(split.keys(), [int(x) for x in classes])), dict(zip(split.keys(), [tuple(map(float, x)) for x in probs]))
     return predictions_ensemble
+    # '''
 
     print("Training...")
     x, y = x_y(train)
