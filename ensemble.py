@@ -13,6 +13,9 @@ from tqdm import tqdm
 from cache import mem
 import warnings
 from muserc import write_muserc, strip_muserc
+import resemble
+from sklearn.model_selection import train_test_split
+import numpy as np
 
 
 @mem.cache
@@ -83,7 +86,7 @@ def process_danetqa(dataset, _preds, probs):
         questions[question].append(prob)
     questions = {k: sum(v) / len(v) for k, v in questions.items()}
     # probs = {k: (questions[s["question"]]) for (k, v), s in zip(probs.items(), dataset.values())}
-    return [{"idx": k, "label": v > 0.5} for k, v in probs.items()]
+    return [{"idx": k, "label": bool(v > 0.5)} for k, v in probs.items()]
 
 
 def process_muserc(_dataset, preds, _probs):
@@ -109,7 +112,8 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "zero/zero", "zero-alt/zero", "zero-alt/zero83", "zero-norm/zero",
           # "mbert/mbert",
           "train/xlm-multirc", "train/xlm-multirc-better", "qa/en-albzero", "train/xlm-danetqa", "train/xlm-both",
-          'train/xlm-many', "train/rb-both"
+          'train/xlm-many', "train/rb-both", "train/rb-last", "train/al-both", "train/de", "train/rb-long",
+          "train/dex", "train/alb-both", "train/mt5"
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
@@ -119,8 +123,8 @@ for file in files:
 datasets = {
     # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
     data.read_muserc: (process_muserc, "MuSeRC", "f1"),
-    data.read_terra: (process_terra, "TERRa", "acc"),
     data.read_rcb: (process_rcb, "RCB", "acc"),
+    data.read_terra: (process_terra, "TERRa", "acc"),
     # data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
     # data.read_russe: (process_russe, "RUSSE", "acc"),
     data.read_parus: (process_parus, "PARus", "acc"),
@@ -169,6 +173,22 @@ def x_y(feats):
 
 
 def ensemble_predictions(train, splits, metric):
+    x, y = x_y(train)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=56, shuffle=False, test_size=0.3)
+    for split in splits:
+        x, y = x_y(splits[split])
+        x["label"] = y
+        splits[split] = x
+    # splits = {key: x_y(split) for key, split in splits.items()}
+    predictions_ensemble = resemble.ensemble_predictions(x_train, y_train, x_test, y_test, splits, metrics[metric])
+    for name, probs in predictions_ensemble.items():
+        split = splits[name]
+        classes, probs = np.argmax(probs, axis=1), probs
+        if probs.shape[1] == 2:
+            probs = probs[:, 1]
+        predictions_ensemble[name] = dict(zip(split.keys(), classes)), dict(zip(split.keys(), probs))
+    return predictions_ensemble
+
     print("Training...")
     x, y = x_y(train)
     x["label"] = y
@@ -237,6 +257,7 @@ if __name__ == '__main__':
     # exit()
 
     for fn, (processor, name, *_) in datasets.items():
+        print(f"Training {name}...")
         preds = build_model(dataset, feats, fn)
         print(f"Writing {name}...")
         utils.write_jsonl(f"outputs/{name}.jsonl", preds)

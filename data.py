@@ -277,7 +277,7 @@ def preprocess_bert(sample, fn, single=False):
     fragments = []
     order = sort_order
     if fn == read_danetqa:
-        order = list(reversed(order))
+        order = order  # list(reversed(order))
     for key in sorted(sample.keys(), key=lambda x: order.index(x)):
         name = key
         if do_replace:
@@ -358,6 +358,10 @@ def make_df(tasks, is_tsv=False, is_pkl=False, source_only=False, **kwargs):
 
 
 if __name__ == '__main__':
+    make_df([read_danetqa], is_pkl=True, translate=True)
+    datas = [read_danetqa, read_rucos, read_rcb, read_parus, read_muserc, read_terra]
+    make_df(datas, is_tsv=True)
+    make_df(datas, source_only=True, is_tsv=True)
     make_df([read_muserc, read_danetqa], is_pkl=True, translate=True)
     exit()
     make_df([read_muserc], is_pkl=True, translate=True)
