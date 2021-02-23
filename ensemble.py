@@ -115,7 +115,9 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           # "mbert/mbert",
           "train/xlm-multirc", "train/xlm-multirc-better", "qa/en-albzero", "train/xlm-danetqa", "train/xlm-both",
           'train/xlm-many', "train/rb-both", "train/rb-last", "train/al-both", "train/de", "train/rb-long",
-          "train/dex", "train/alb-both", "train/mt5", "train/mt5-long", "train/mt5-long-2"
+          "train/dex", "train/alb-both", "train/mt5", "train/mt5-long", "train/mt5-long-2",
+          # "process/raw-small", "process/raw-base", "process/raw-large", "process/raw-3B",
+          "process/rawe-small", "process/rawe-base", "process/rawe-large", "process/rawe-3B",
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
@@ -125,11 +127,11 @@ for file in files:
 datasets = {
     # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
     data.read_muserc: (process_muserc, "MuSeRC", "f1"),
-    data.read_rcb: (process_rcb, "RCB", "acc"),
+    # data.read_rcb: (process_rcb, "RCB", "acc"),
     data.read_terra: (process_terra, "TERRa", "acc"),
     # data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
     # data.read_russe: (process_russe, "RUSSE", "acc"),
-    data.read_parus: (process_parus, "PARus", "acc"),
+    # data.read_parus: (process_parus, "PARus", "acc"),
     data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
 }
 metrics = dict(
