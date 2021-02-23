@@ -16,6 +16,7 @@ from muserc import write_muserc, strip_muserc
 import resemble
 from sklearn.model_selection import train_test_split
 import numpy as np
+import copy
 
 
 @mem.cache
@@ -71,7 +72,7 @@ def process_parus(_dataset, _preds, probs):
     vals = list(probs.values())
     result = []
     for i in range(len(vals) // 2):
-        result.append({"idx": i, "label": int(vals[i*2+1] > vals[i*2+0])})
+        result.append({"idx": i, "label": int(vals[i*2+0] > vals[i*2+1])})
     return result
 
 
@@ -114,7 +115,7 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           # "mbert/mbert",
           "train/xlm-multirc", "train/xlm-multirc-better", "qa/en-albzero", "train/xlm-danetqa", "train/xlm-both",
           'train/xlm-many', "train/rb-both", "train/rb-last", "train/al-both", "train/de", "train/rb-long",
-          "train/dex", "train/alb-both", "train/mt5"
+          "train/dex", "train/alb-both", "train/mt5", "train/mt5-long", "train/mt5-long-2"
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
@@ -177,6 +178,7 @@ def ensemble_predictions(train, splits, metric):
     # '''
     x, y = x_y(train)
     x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=56, shuffle=False, test_size=0.3)
+    og_splits = copy.deepcopy(splits)
     for split in splits:
         x, y = x_y(splits[split])
         x["label"] = y
@@ -184,7 +186,7 @@ def ensemble_predictions(train, splits, metric):
     # splits = {key: x_y(split) for key, split in splits.items()}
     predictions_ensemble = resemble.ensemble_predictions(x_train, y_train, x_test, y_test, splits, metrics[metric])
     for name, probs in predictions_ensemble.items():
-        split = splits[name]
+        split = og_splits[name]
         classes, probs = np.argmax(probs, axis=1), probs
         if probs.shape[1] == 2:
             probs = probs[:, :1]

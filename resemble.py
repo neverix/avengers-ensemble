@@ -230,7 +230,7 @@ def train_models(x, y, x_test, y_test, splits, metric, best_feats):
         for name, split in splits.items():
             # feats, _ = x_y(split)
             # feats = feats[best_feats]
-            model_predictions = model[name] # .predict_proba(feats)
+            model_predictions = model[name]  # .predict_proba(feats)
             results[name] = model_predictions
         models.append((score, results, threshold))
     return models
