@@ -118,6 +118,7 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "train/dex", "train/alb-both", "train/mt5", "train/mt5-long", "train/mt5-long-2",
           # "process/raw-small", "process/raw-base", "process/raw-large", "process/raw-3B",
           "process/rawe-small", "process/rawe-base", "process/rawe-large", "process/rawe-3B",
+          "process/none-small", "process/none-base", "process/none-large", "process/none-3B",
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
