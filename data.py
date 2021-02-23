@@ -358,6 +358,8 @@ def make_df(tasks, is_tsv=False, is_pkl=False, source_only=False, **kwargs):
 
 
 if __name__ == '__main__':
+    make_df([read_danetqa, read_muserc, read_terra], source_only=True, is_tsv=True, translate=True)
+    exit()
     make_df([read_danetqa], is_pkl=True, translate=True)
     datas = [read_danetqa, read_rucos, read_rcb, read_parus, read_muserc, read_terra]
     make_df(datas, is_tsv=True)
