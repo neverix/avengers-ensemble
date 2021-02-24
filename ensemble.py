@@ -143,8 +143,8 @@ metrics = dict(
     acc=accuracy_score,
     mcc=matthews_corrcoef,
 )
-boost_iterations = 4
-keep_feats = .5
+boost_iterations = 11
+keep_feats = .25
 
 
 def make_feats(dataset):
