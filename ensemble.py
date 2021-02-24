@@ -17,6 +17,7 @@ import resemble
 from sklearn.model_selection import train_test_split
 import numpy as np
 import copy
+import random
 
 
 @mem.cache
@@ -142,6 +143,8 @@ metrics = dict(
     acc=accuracy_score,
     mcc=matthews_corrcoef,
 )
+boost_iterations = 4
+keep_feats = .5
 
 
 def make_feats(dataset):
@@ -190,9 +193,27 @@ def ensemble_predictions(train, splits, metric):
         x["label"] = y
         splits[split] = x
     # splits = {key: x_y(split) for key, split in splits.items()}
+    cols = list(set(x.columns) - {"label"})
 
-    predictions_ensemble = resemble.ensemble_predictions(x_train, y_train, x_test, y_test, splits, metrics[metric])
-
+    best_score, best = -1, None
+    bests = []
+    for i in range(boost_iterations):
+        print("Boosting,", i+1, "out of", boost_iterations)
+        sel = random.sample(cols, int(len(cols) * keep_feats))
+        # resel = lambda m: {k: {s: z[s] for s in sel + ["label"]} for k, z in m.items()}
+        new_splits = {fn: split[sel +
+                                (["label"] if "label" in split.columns else [])].copy()
+                      for fn, split in splits.items()}
+        predictions_ensemble, score = resemble.ensemble_predictions(x_train[sel].copy(), y_train,
+                                                                    x_test[sel].copy(), y_test,
+                                                                    new_splits, metrics[metric])
+        bests.append(score)
+        if score > best_score:
+            best_score = score
+            best = predictions_ensemble
+        print("Boosting result:", score)
+    print("Best score:", best_score, "out of", *bests)
+    predictions_ensemble = best
 
     for name, probs in predictions_ensemble.items():
         split = og_splits[name]
@@ -254,6 +275,9 @@ def best_features(x_test, y_test, metric=accuracy_score):
 
 
 if __name__ == '__main__':
+    np.random.seed(56)
+    random.seed(56)
+
     print("Loading data...")
     dataset = data.load_all(verbose=True)
     print("Making features...")
