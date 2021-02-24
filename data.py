@@ -308,7 +308,7 @@ data_funs = (read_lidirus, read_rcb, read_parus,  # read_parus_nonnli,
              read_muserc, read_terra, read_russe, read_rwsd, read_danetqa,  # read_rucos_nli,  # read_rucos
              )
 translation_path = "translations/translation.json"
-dont_process = (read_danetqa, read_muserc, read_terra)
+dont_process = (read_danetqa, read_terra, read_lidirus)
 
 
 def load_all(tasks=data_funs, verbose=False, translate=False):
@@ -358,6 +358,8 @@ def make_df(tasks, is_tsv=False, is_pkl=False, source_only=False, **kwargs):
 
 
 if __name__ == '__main__':
+    make_df([read_danetqa, read_muserc], is_pkl=True, translate=True)
+    exit()
     make_df([read_danetqa, read_muserc, read_terra], source_only=True, is_tsv=True, translate=True)
     exit()
     make_df([read_danetqa], is_pkl=True, translate=True)
