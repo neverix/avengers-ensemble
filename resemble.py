@@ -278,7 +278,8 @@ def ensemble_predictions(x, y, x_test, y_test, splits, metric, importances=-1., 
         model_predictions = [model[name] * weight for (_, model, *_), weight in zip(models, weights)]
         predictions = np.array([np.sum(np.array(preds), axis=0) for preds in zip(*model_predictions)])
         predictions_ensemble[name] = predictions
-    return predictions_ensemble
+    score = metric(y_test, np.argmax(predictions_ensemble["val"], axis=1)[-len(y_test):])
+    return predictions_ensemble, score
 
 
 @mem.cache
