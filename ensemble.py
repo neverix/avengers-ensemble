@@ -119,6 +119,8 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           # "process/raw-small", "process/raw-base", "process/raw-large", "process/raw-3B",
           "process/rawe-small", "process/rawe-base", "process/rawe-large", "process/rawe-3B",
           "process/none-small", "process/none-base", "process/none-large", "process/none-3B",
+          "process/all-small", "process/all-base", "process/all-large", "process/all-3B",
+          "train/large"
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
@@ -181,13 +183,17 @@ def ensemble_predictions(train, splits, metric):
     # '''
     x, y = x_y(train)
     x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=56, shuffle=False, test_size=0.3)
+
     og_splits = copy.deepcopy(splits)
     for split in splits:
         x, y = x_y(splits[split])
         x["label"] = y
         splits[split] = x
     # splits = {key: x_y(split) for key, split in splits.items()}
+
     predictions_ensemble = resemble.ensemble_predictions(x_train, y_train, x_test, y_test, splits, metrics[metric])
+
+
     for name, probs in predictions_ensemble.items():
         split = og_splits[name]
         classes, probs = np.argmax(probs, axis=1), probs
