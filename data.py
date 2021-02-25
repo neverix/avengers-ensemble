@@ -1,5 +1,6 @@
 import utils
 import translator
+from cache import mem
 from functools import partial
 import re
 import pandas as pd
@@ -311,12 +312,13 @@ translation_path = "translations/translation.json"
 dont_process = (read_danetqa, read_terra, read_lidirus)
 
 
+@mem.cache
 def load_all(tasks=data_funs, verbose=False, translate=False):
     splits = {}
     source = {}
     for fn in data_funs:
         for split in ("train", "test", "val"):
-            print("Reading", fn.__name__, split)
+            # print("Reading", fn.__name__, split)
             if split not in splits:
                 splits[split] = []
             if fn not in tasks:
