@@ -17,6 +17,7 @@ from functools import partial
 
 
 mem = joblib.Memory("cache_dir", verbose=False)
+keep_feats = .5
 
 
 def load_jsonl(fpath):
@@ -117,13 +118,25 @@ def fit_one(model, x, y, x_test, y_test, splits, metric, params, init_params, kw
 
 
 def fit_rs(model, init_params, x, y, x_test, y_test, splits, metric, params, n_iter=32, n_jobs=8, **kwargs):
-    n_jobs = 8
-    n_iter = 1
-    models = [fit_one(model, x, y, x_test, y_test, splits, metric, params, init_params, kwargs)]
-    # models = Pool(n_jobs).starmap(fit_one,
-    #                               [(model, x, y, x_test, y_test, splits, params, init_params, kwargs)
-    #                                for _ in range(n_iter)])
-    score, model, threshold = max(models)
+    cols = list(set(x.columns) - {"label"})
+    sel = random.sample(cols, int(len(cols) * keep_feats))
+    new_splits = {fn: split[sel +
+                            (["label"] if "label" in split.columns and False else [])].copy()
+                  for fn, split in splits.items()}
+    x, x_test = x[sel].copy(), x_test[sel].copy()
+    es = kwargs["eval_set"]
+    es[0] = (es[0][0][sel].copy(), es[0][1])
+    # print(sel)
+    # print(list(x.columns))
+    # print(list(x_test.columns))
+
+    # n_jobs = 8
+    # n_iter = 1
+    # models = [fit_one(model, x, y, x_test, y_test, splits, metric, params, init_params, kwargs)]
+    models = Pool(n_jobs).starmap(fit_one,
+                                  [(model, x, y, x_test, y_test, new_splits, metric, params, init_params, kwargs)
+                                   for _ in range(n_iter)])
+    score, model, threshold = max(models, key=lambda x: x[0])
     return model, score, threshold
 
 
@@ -217,8 +230,10 @@ def catboost_trainer(x, y, x_test, y_test, splits, metric, **kwargs):
 def train_models(x, y, x_test, y_test, splits, metric, best_feats):
     models = []
     boosts = [# xgboost_trainer, xgboost_trainer, xgboost_trainer, xgboost_trainer, xgboost_trainer,
-              lgbm_trainer, lgbm_trainer, lgbm_trainer, lgbm_trainer, lgbm_trainer,
               catboost_trainer, catboost_trainer, catboost_trainer, catboost_trainer, catboost_trainer, catboost_trainer,
+              # catboost_trainer, catboost_trainer, catboost_trainer, catboost_trainer, catboost_trainer, catboost_trainer,
+              # lgbm_trainer, lgbm_trainer, lgbm_trainer, lgbm_trainer, lgbm_trainer,
+              # lgbm_trainer, lgbm_trainer, lgbm_trainer, lgbm_trainer, lgbm_trainer,
               # lgbm_trainer, lgbm_trainer, lgbm_trainer, lgbm_trainer, # lgbm_trainer, lgbm_trainer,
               # catboost_trainer, catboost_trainer, catboost_trainer, # catboost_trainer, catboost_trainer, catboost_trainer
               ]
