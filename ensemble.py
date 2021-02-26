@@ -18,6 +18,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import copy
 import random
+from datetime import datetime
 
 
 @mem.cache
@@ -121,7 +122,7 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "process/rawe-small", "process/rawe-base", "process/rawe-large", "process/rawe-3B",
           "process/none-small", "process/none-base", "process/none-large", "process/none-3B",
           "process/all-small", "process/all-base", "process/all-large", "process/all-3B",
-          "train/large"
+          "train/large", "11/11b", "train/large-nli", "11/11-train"
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
@@ -300,5 +301,5 @@ if __name__ == '__main__':
         print(f"Writing {name}...")
         utils.write_jsonl(f"outputs/{name}.jsonl", preds)
     print("Archiving...")
-    shutil.make_archive("outputs", "zip", "outputs/")
+    shutil.make_archive(f"out/outputs_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}", "zip", "outputs/")
     print("Done!")

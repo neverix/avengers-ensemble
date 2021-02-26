@@ -312,7 +312,7 @@ translation_path = "translations/translation.json"
 dont_process = (read_danetqa, read_terra, read_lidirus)
 
 
-@mem.cache
+# @mem.cache
 def load_all(tasks=data_funs, verbose=False, translate=False):
     splits = {}
     source = {}
@@ -360,7 +360,10 @@ def make_df(tasks, is_tsv=False, is_pkl=False, source_only=False, **kwargs):
 
 
 if __name__ == '__main__':
-    make_df([read_danetqa, read_muserc], is_pkl=True, translate=True)
+    make_df([read_danetqa, read_muserc], is_tsv=True, translate=True)
+    make_df([read_danetqa, read_muserc], is_tsv=True, source_only=True, translate=True)
+    make_df([read_danetqa, read_muserc, read_terra], is_tsv=True, translate=True)
+    make_df([read_danetqa, read_muserc, read_terra], is_tsv=True, source_only=True, translate=True)
     exit()
     make_df([read_danetqa, read_muserc, read_terra], source_only=True, is_tsv=True, translate=True)
     exit()
