@@ -132,6 +132,7 @@ files = set(x.split('.')[0] for x in os.listdir("scores/all-step"))
 for file in files:
     models.append(f"all-step/{file}")
 datasets = {
+    data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
     data.read_rwsd: (process_rwsd, "RWSD", "acc"),
     data.read_muserc: (process_muserc, "MuSeRC", "f1"),
     data.read_rcb: (process_rcb, "RCB", "acc"),
@@ -139,7 +140,6 @@ datasets = {
     data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
     data.read_russe: (process_russe, "RUSSE", "acc"),
     data.read_parus: (process_parus, "PARus", "acc"),
-    data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
 }
 metrics = dict(
     f1=f1_score,
@@ -148,6 +148,7 @@ metrics = dict(
 )
 boost_iterations = 1
 keep_feats = 1.
+corr_thresh = .99
 
 
 def make_feats(dataset):
@@ -185,16 +186,20 @@ def x_y(feats):
     return feats.drop(columns=["label"]), feats["label"]
 
 
-def ensemble_predictions(train, splits, metric):
-    # '''
+def ensemble_predictions(train, splits, metric, feats=None):
     x, y = x_y(train)
+    if feats is None:
+        feats = list(x.columns)
+
+    '''
+    x = x[feats]
     x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=56, shuffle=False, test_size=0.3)
 
     og_splits = copy.deepcopy(splits)
     for split in splits:
         x, y = x_y(splits[split])
         x["label"] = y
-        splits[split] = x
+        splits[split] = x[feats]
     # splits = {key: x_y(split) for key, split in splits.items()}
     cols = list(set(x.columns) - {"label"})
 
@@ -225,10 +230,10 @@ def ensemble_predictions(train, splits, metric):
             probs = probs[:, :1]
         predictions_ensemble[name] = dict(zip(split.keys(), [int(x) for x in classes])), dict(zip(split.keys(), [tuple(map(float, x)) for x in probs]))
     return predictions_ensemble
-    # '''
+    '''
 
     print("Training...")
-    x, y = x_y(train)
+    x = x[feats]
     x["label"] = y
     train_data = task.Dataset(x)
     predictor = task.fit(presets="best_quality", train_data=train_data, eval_metric=metric, label="label", hyperparameters={'GBM': {}, 'CAT': dict(
@@ -255,7 +260,29 @@ def ensemble_predictions(train, splits, metric):
 
 def build_model(dataset, feats, fn):
     fun, _, metric, *_ = datasets[fn]
-    preds = ensemble_predictions(feats[fn]["val"], feats[fn], metric=metric)
+
+    x, y = x_y(feats[fn]["val"])
+    corr = x.corr().abs()
+    cols = ['_'.join(x.split('_')[:-1]) for x in corr.columns.tolist()]
+    top = []
+    for x, a in enumerate(cols):
+        for y, b in enumerate(cols[:x]):
+            if a == b:
+                continue
+            c = corr.iloc[x, y]
+            if c != 1:
+                top.append((c, a, b))
+    top.sort()
+    allowed = corr.columns.tolist()
+    while True:
+        score, a, b = top.pop()
+        if score < corr_thresh:
+            break
+        remove = a
+        top = [x for x in top if remove not in (x[1], x[2])]
+        allowed = [col for col in allowed if '_'.join(col.split('_')[:-1]) != remove]
+
+    preds = ensemble_predictions(feats[fn]["val"], feats[fn], metric=metric, feats=allowed)
     return fun(dataset, *preds["test"])
 
 
@@ -267,7 +294,7 @@ def best_features(x_test, y_test, metric=accuracy_score):
     for feat in tqdm(real_feats):
         related = [x for x in all_feats if x.startswith(feat + '_')]
         x_rel = x_test[related].fillna(0)
-        model = LogisticRegression(C=1e56)  #  RandomForestClassifier(n_estimators=16, max_depth=2)
+        model = LogisticRegression(C=1e56)  # RandomForestClassifier(n_estimators=16, max_depth=2)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             model.fit(x_rel, y_test)
