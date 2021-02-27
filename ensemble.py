@@ -122,7 +122,9 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "process/rawe-small", "process/rawe-base", "process/rawe-large", "process/rawe-3B",
           "process/none-small", "process/none-base", "process/none-large", "process/none-3B",
           "process/all-small", "process/all-base", "process/all-large", "process/all-3B",
-          "train/large", "11/11b", "train/large-nli", "11/11-train"
+          "train/large", "11/11b", "train/large-nli", "11/11-train", "11/11-long",
+          "process/noq-small", "process/noq-base", "process/noq-large", "process/noq-3B",
+          "process/bcq-small", "process/bcq-base", "process/bcq-large", "process/bcq-3B",
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
@@ -130,13 +132,13 @@ files = set(x.split('.')[0] for x in os.listdir("scores/all-step"))
 for file in files:
     models.append(f"all-step/{file}")
 datasets = {
-    # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
+    data.read_rwsd: (process_rwsd, "RWSD", "acc"),
     data.read_muserc: (process_muserc, "MuSeRC", "f1"),
-    # data.read_rcb: (process_rcb, "RCB", "acc"),
+    data.read_rcb: (process_rcb, "RCB", "acc"),
     data.read_terra: (process_terra, "TERRa", "acc"),
-    # data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
-    # data.read_russe: (process_russe, "RUSSE", "acc"),
-    # data.read_parus: (process_parus, "PARus", "acc"),
+    data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
+    data.read_russe: (process_russe, "RUSSE", "acc"),
+    data.read_parus: (process_parus, "PARus", "acc"),
     data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
 }
 metrics = dict(
@@ -161,7 +163,7 @@ def make_feats(dataset):
     for fn in data.data_funs:
         splits = {}
         for split in ("val", "test"):
-            data1, data2, data3 = source[(fn, split)]
+            data1, data2, data3 = source[(fn.__name__, split)]
             results = {key: {} for key in data2}
             for model in models:
                 result = preds[(model, split)]

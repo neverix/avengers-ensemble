@@ -18,7 +18,8 @@ from functools import partial
 
 mem = joblib.Memory("cache_dir", verbose=False)
 mode = False
-keep_feats = .5
+keep_feats = .25  # .5
+power = .25  # .25
 
 
 def load_jsonl(fpath):
@@ -99,10 +100,7 @@ def x_y(feats):
 def fit_one(model, x, y, x_test, y_test, splits, metric, params, init_params, kwargs, *args, **kw):
     sampled = list(ParameterSampler(params, 1, random_state=np.random.RandomState(random.randint(0, 100))))[0]
     mod = model(**init_params, **sampled)
-    x[np.logical_not(np.isfinite(x))] = 0.
-    x = x.replace([-inf, inf], np.nan).fillna(0.)
-    y[np.logical_not(np.isfinite(y))] = 0
-    y = y.replace([-inf, inf], np.nan).fillna(0).astype(int)
+    
     # print(len(x))
     mod.fit(x, y, **kwargs)
     # print('done')
@@ -232,6 +230,12 @@ def catboost_trainer(x, y, x_test, y_test, splits, metric, **kwargs):
 
 
 def train_models(x, y, x_test, y_test, splits, metric, best_feats):
+    x[np.logical_not(np.isfinite(x))] = 0.
+    x = x.replace([-inf, inf], np.nan).fillna(0.)
+    y[np.logical_not(np.isfinite(y))] = 0
+    y = y.replace([-inf, inf], np.nan).fillna(0).astype(int)
+    y_test = y_test.replace([-inf, inf], np.nan).fillna(0).astype(int)
+
     models = []
     boosts = [# xgboost_trainer, xgboost_trainer, xgboost_trainer, xgboost_trainer, xgboost_trainer,
               catboost_trainer, catboost_trainer, catboost_trainer, catboost_trainer, catboost_trainer, catboost_trainer,
@@ -256,7 +260,7 @@ def train_models(x, y, x_test, y_test, splits, metric, best_feats):
 
 
 @mem.cache
-def ensemble_predictions(x, y, x_test, y_test, splits, metric, importances=-1., power=.25, cutoff=9):
+def ensemble_predictions(x, y, x_test, y_test, splits, metric, importances=-1., power=power, cutoff=9):
     if importances > .0:
         pass
         '''

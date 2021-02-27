@@ -1,6 +1,6 @@
 import utils
 import translator
-from cache import mem
+import cache
 from functools import partial
 import re
 import pandas as pd
@@ -55,7 +55,7 @@ def preprocess_parus(data, nli=True):
                 val.idx = sample.idx
                 yield idx, val
         else:
-            sample.label = sample.get("label", 0)
+            sample.label = int(sample.get("label", 0))
             yield sample.idx, sample
 
 
@@ -129,7 +129,7 @@ def read_russe(split):
 
 def preprocess_rwsd(data):
     for sample in data:
-        sample.label = sample.get("label", 0)
+        sample.label = int(sample.get("label", 0))
         sample.word1 = sample.target["span1_text"]
         sample.word2 = sample.target["span2_text"]
         sample.misc = sample.pop("target")
@@ -230,8 +230,19 @@ def remove_diacritics(text):
     return text.replace(r'́', '').replace('\xad', '')
 
 
+def remove_bracket(text):
+    return re.sub(r"\[+[\d\W]+\]", '', text)
+
+
 def preprocess_text(text):
-    for fn in [lambda x: x, remove_highlight, repl_quotes, repl_lines, strip_numbers, remove_diacritics]:
+    for fn in [lambda x: x,
+               # remove_highlight,
+               # repl_quotes,
+               # repl_lines,
+               strip_numbers,
+               remove_diacritics,
+               remove_bracket
+               ]:
         text = fn(text).strip()
         while '  ' in text:
             text = text.replace('  ', ' ').strip()
@@ -309,11 +320,16 @@ data_funs = (read_lidirus, read_rcb, read_parus,  # read_parus_nonnli,
              read_muserc, read_terra, read_russe, read_rwsd, read_danetqa,  # read_rucos_nli,  # read_rucos
              )
 translation_path = "translations/translation.json"
-dont_process = (read_danetqa, read_terra, read_lidirus)
+dont_process = () # (read_danetqa, read_terra, read_lidirus)
 
 
-# @mem.cache
-def load_all(tasks=data_funs, verbose=False, translate=False):
+def load_all(tasks=data_funs, *args, **kwargs):
+    return load_all_real([f.__name__ for f in tasks], *args, **kwargs)
+
+
+@cache.mem.cache
+def load_all_real(tasks, verbose=False, translate=False):
+    #323
     splits = {}
     source = {}
     for fn in data_funs:
@@ -321,7 +337,7 @@ def load_all(tasks=data_funs, verbose=False, translate=False):
             # print("Reading", fn.__name__, split)
             if split not in splits:
                 splits[split] = []
-            if fn not in tasks:
+            if fn.__name__ not in tasks:
                 # splits[split] += [('0', 0) for _ in src]
                 continue
             src = fn(split)
@@ -333,7 +349,7 @@ def load_all(tasks=data_funs, verbose=False, translate=False):
                 table = translator.translate_all(to_translate(dataset), translation_path)
                 dataset = preprocess_dataset(dataset, fun=partial(replace_table, table=table))
             data = preprocess_dataset(dataset, fun=partial(preprocess_bert, fn=fn, single=len(tasks) == 1))
-            source[(fn, split)] = src, dataset, data
+            source[(fn.__name__, split)] = src, dataset, data
             dct = next(iter(data.values()))
             if isinstance(dct, dict) and "misc" in dct:
                 del dct["misc"]
@@ -360,9 +376,9 @@ def make_df(tasks, is_tsv=False, is_pkl=False, source_only=False, **kwargs):
 
 
 if __name__ == '__main__':
-    make_df([read_danetqa, read_muserc], is_tsv=True, translate=True)
-    make_df([read_danetqa, read_muserc], is_tsv=True, source_only=True, translate=True)
-    make_df([read_danetqa, read_muserc, read_terra], is_tsv=True, translate=True)
+    # make_df([read_danetqa, read_muserc], is_tsv=True, translate=True)
+    # make_df([read_danetqa, read_muserc], is_tsv=True, source_only=True, translate=True)
+    # make_df([read_danetqa, read_muserc, read_terra], is_tsv=True, translate=True)
     make_df([read_danetqa, read_muserc, read_terra], is_tsv=True, source_only=True, translate=True)
     exit()
     make_df([read_danetqa, read_muserc, read_terra], source_only=True, is_tsv=True, translate=True)

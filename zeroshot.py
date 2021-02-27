@@ -19,6 +19,10 @@ def process_rcb(sample):
                                                 f"{get_words(sample['hypothesis'])} следует из текста",)
 
 
+def process_parus(sample):
+    return get_words(sample["premise"]), "{} следует из текста", (get_words(sample["hypothesis"]),)
+
+
 def process_russe(sample):
     return get_words(sample["sentence1"]), f"слово {sample['word']} применяется в том же смысле {'{}'}",\
            (get_words(sample["sentence2"]),)
@@ -40,6 +44,7 @@ processors = {
     # data.read_rcb: process_rcb,
     # data.read_russe: process_russe,
     data.read_muserc: process_muserc,
+    data.read_parus: process_parus,
 }
 name = "zero-norm/super-plus"
 
