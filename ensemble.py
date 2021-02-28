@@ -94,7 +94,7 @@ def process_danetqa(dataset, preds, probs):
 
 
 def process_muserc(_dataset, preds, _probs):
-    return strip_muserc(write_muserc("datasets/MuSeRC/test.jsonl", preds))
+    return strip_muserc(write_muserc("datasets/MuSeRC/test.jsonl", [int(x) for x in preds.values()]))
     # splits, source = dataset
     # src, datas, data_ = source[(data.read_muserc, "test")]
     # print(src.keys(), src[5])
@@ -125,7 +125,8 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "train/large", "11/11b", "train/large-nli", "11/11-train", "11/11-long",
           "process/noq-small", "process/noq-base", "process/noq-large", "process/noq-3B",
           "process/bcq-small", "process/bcq-base", "process/bcq-large", "process/bcq-3B",
-          "11/11-longer", "11/11-longest", "11/11-longerest", "11/11a-f", "11/11-f"
+          "11/11-longer", "11/11-longest", "11/11-longerest", "11/11a-f", "11/11-f",
+          "11/11a-long", "11/11a-longer"
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
@@ -133,14 +134,14 @@ files = set(x.split('.')[0] for x in os.listdir("scores/all-step"))
 for file in files:
     models.append(f"all-step/{file}")
 datasets = {
-    data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
-    # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
     data.read_muserc: (process_muserc, "MuSeRC", "f1"),
-    # data.read_rcb: (process_rcb, "RCB", "acc"),
+    data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
+    data.read_rwsd: (process_rwsd, "RWSD", "acc"),
+    data.read_rcb: (process_rcb, "RCB", "acc"),
     data.read_terra: (process_terra, "TERRa", "acc"),
-    # data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
-    # data.read_russe: (process_russe, "RUSSE", "acc"),
-    # data.read_parus: (process_parus, "PARus", "acc"),
+    data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
+    data.read_russe: (process_russe, "RUSSE", "acc"),
+    data.read_parus: (process_parus, "PARus", "acc"),
 }
 metrics = dict(
     f1=f1_score,
