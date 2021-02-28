@@ -125,6 +125,7 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "train/large", "11/11b", "train/large-nli", "11/11-train", "11/11-long",
           "process/noq-small", "process/noq-base", "process/noq-large", "process/noq-3B",
           "process/bcq-small", "process/bcq-base", "process/bcq-large", "process/bcq-3B",
+          "11/11-longer", "11/11-longest", "11/11-longerest", "11/11a-f", "11/11-f"
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
@@ -133,13 +134,13 @@ for file in files:
     models.append(f"all-step/{file}")
 datasets = {
     data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
-    data.read_rwsd: (process_rwsd, "RWSD", "acc"),
+    # data.read_rwsd: (process_rwsd, "RWSD", "acc"),
     data.read_muserc: (process_muserc, "MuSeRC", "f1"),
-    data.read_rcb: (process_rcb, "RCB", "acc"),
+    # data.read_rcb: (process_rcb, "RCB", "acc"),
     data.read_terra: (process_terra, "TERRa", "acc"),
-    data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
-    data.read_russe: (process_russe, "RUSSE", "acc"),
-    data.read_parus: (process_parus, "PARus", "acc"),
+    # data.read_lidirus: (process_lidirus, "LiDiRus", "mcc"),
+    # data.read_russe: (process_russe, "RUSSE", "acc"),
+    # data.read_parus: (process_parus, "PARus", "acc"),
 }
 metrics = dict(
     f1=f1_score,
@@ -148,7 +149,7 @@ metrics = dict(
 )
 boost_iterations = 1
 keep_feats = 1.
-corr_thresh = .99
+corr_thresh = 1.
 
 
 def make_feats(dataset):
