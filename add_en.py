@@ -4,7 +4,7 @@ import re
 
 
 if __name__ == '__main__':
-    df = pd.read_pickle("datasets/boolq-multirc_train.pkl")
+    df = pd.read_pickle("datasets/boolq-record-cb-copa-multirc-rte_train.pkl")
     en = []
     for line in map(json.loads, open("datasets/BoolQ/train.jsonl")):
         en.append((f"boolq question: {line['question']} passage: {line['passage']}", int(line["answer"])))
