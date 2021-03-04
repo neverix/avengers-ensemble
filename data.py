@@ -164,7 +164,14 @@ def preprocess_rucos(data, nli=False, single=True, interpolate=True):
         sample.misc["qas"] = sample.pop("qas")
         for query in qas:
             question = query["query"]
-            answers = set(answer["text"] for answer in query["answers"]) if "answers" in query else ['' if nli else candidates[0]]
+            answers = []
+            for answer in query.get("answers", ()):
+                answer = answer["text"]
+                if answer not in answers:
+                    answers.append(answer)
+            if len(answers) == 0:
+                answers = ['']
+            # answers = set(answer["text"] for answer in query["answers"]) if "answers" in query else ['' if nli else candidates[0]]
             if nli:
                 for candidate in candidates:
                     if interpolate:
@@ -178,9 +185,11 @@ def preprocess_rucos(data, nli=False, single=True, interpolate=True):
                     idx += 1
             else:
                 if single:
-                    answers = [next(iter(answers))]
+                    answers = answers[:1]
                 for answer in answers:
                     sample.candidates = candidates
+                    for i, cand in enumerate(candidates):
+                        sample[i] = cand
                     sample.question = question
                     sample.answer = answer
                     yield idx, sample
@@ -238,10 +247,10 @@ def preprocess_text(text):
     for fn in [lambda x: x,
                # remove_highlight,
                # repl_quotes,
-               # repl_lines,
-               strip_numbers,
-               remove_diacritics,
-               remove_bracket
+               repl_lines,
+               # strip_numbers,
+               # remove_diacritics,
+               # remove_bracket
                ]:
         text = fn(text).strip()
         while '  ' in text:
@@ -259,8 +268,8 @@ def preprocess_dataset(dataset, fun=preprocess_sample):
     return {key: fun(value) for key, value in dataset.items()}
 
 
-sort_order = ("question", "answer", "word", "word1", "word2", "text",
-              "sentence1", "sentence2", "premise", "hypothesis", "passage")
+sort_order = ("question", "candidates", "answer", "word", "word1", "word2", "text",
+              "sentence1", "sentence2", "premise", "hypothesis", "passage") + tuple(range(100))
 replacements = dict(
     question="вопрос", answer="ответ", word="слово", word1="слово1", word2="слово2", text="текст",
     sentence1="предложение1", sentence2="предложение2", premise="предложение", hypothesis="гипотеза", passage="текст",
@@ -284,7 +293,7 @@ def fn_name(fn):
 
 
 def preprocess_bert(sample, fn, single=False):
-    label = sample["label"]
+    label = sample["label"] if "label" in sample else None
     sample = {key: value for key, value in sample.items() if key not in ("idx", "misc", "label")}
     fragments = []
     order = sort_order
@@ -305,22 +314,28 @@ def preprocess_bert(sample, fn, single=False):
 def replace_table(sample, table=None):
     if table is None:
         table = {}
-    return {key: (table[value.strip()] if isinstance(key, str) and key not in ("idx", "misc", "label") else value)
+    # and key not in ("idx", "misc", "label")
+    return {key: (table[value.strip()] if isinstance(value, str) else value)
             for key, value in sample.items()}
 
 
 def to_translate(data):
-    result = set()
+    seen = set()
+    result = []
+    for sample in data.values():
+        vals = [value for key, value in sample.items() if isinstance(value, str) and key not in ("idx", "label", "misc")]
+        result += [x for x in vals if not (x in seen or seen.add(x))]
+    return result[::-1]  # [x for x in data if not (x in result or result.add(x))]
     for sample in data.values():
         result.update({value for key, value in sample.items() if isinstance(value, str) and key not in ("idx", "label", "misc")})
     return result
 
 
 data_funs = (read_lidirus, read_rcb, read_parus,  # read_parus_nonnli,
-             read_muserc, read_terra, read_russe, read_rwsd, read_danetqa,  # read_rucos_nli,  # read_rucos
+             read_muserc, read_terra, read_russe, read_rwsd, read_danetqa,  read_rucos_nli,  read_rucos
              )
 translation_path = "translations/translation.json"
-dont_process = data_funs  # (read_danetqa, read_terra, read_lidirus)
+dont_process = ()  # data_funs  # (read_danetqa, read_terra, read_lidirus)
 
 
 def load_all(tasks=data_funs, *args, **kwargs):
@@ -329,24 +344,39 @@ def load_all(tasks=data_funs, *args, **kwargs):
 
 @cache.mem.cache
 def load_all_real(tasks, verbose=False, translate=False):
-    #323
+    #3234956
     splits = {}
     source = {}
     for fn in data_funs:
-        for split in ("train", "test", "val"):
+        for split in ("test", "val", "train",):
             # print("Reading", fn.__name__, split)
             if split not in splits:
                 splits[split] = []
             if fn.__name__ not in tasks:
                 # splits[split] += [('0', 0) for _ in src]
                 continue
+            print(split)
             src = fn(split)
             if fn not in dont_process:
                 dataset = preprocess_dataset(src)
             else:
                 dataset = src
             if translate:
+                ''''
+                for i in range(900):
+                    try:
+                        import json
+                        datas = to_translate(dataset)
+                        table = json.load(open(translation_path))
+                        print(table[sorted(datas, reverse=True, key=lambda x: len(x))[i]])
+                        print(sorted(datas, reverse=True, key=lambda x: len(x))[i])
+                        print(i)
+                        exit()
+                    except KeyError:
+                        pass
+                '''
                 table = translator.translate_all(to_translate(dataset), translation_path)
+                print("translated")
                 dataset = preprocess_dataset(dataset, fun=partial(replace_table, table=table))
             data = preprocess_dataset(dataset, fun=partial(preprocess_bert, fn=fn, single=len(tasks) == 1))
             source[(fn.__name__, split)] = src, dataset, data
@@ -376,8 +406,12 @@ def make_df(tasks, is_tsv=False, is_pkl=False, source_only=False, **kwargs):
 
 
 if __name__ == '__main__':
+    # make_df([read_rucos_nli], is_pkl=True)
+    make_df([read_rucos], is_pkl=True, translate=True)
+    exit()
     datas = [read_danetqa, read_rucos, read_rcb, read_parus, read_muserc, read_terra]
     make_df(datas, is_tsv=True, translate=True)
+    make_df(datas, is_pkl=True, translate=True,)
     make_df(datas, source_only=True, is_tsv=True, translate=True)
     exit()
     # make_df([read_danetqa, read_muserc], is_tsv=True, translate=True)
