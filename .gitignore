@@ -11,7 +11,7 @@ DeBERTa/
 states/
 lightning_logs/
 .idea/
-*.ipynb
+# *.ipynb
 models/
 catboost_info/
 *.json
