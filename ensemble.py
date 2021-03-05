@@ -74,7 +74,7 @@ def process_parus(_dataset, _preds, probs):
     vals = list(probs.values())
     result = []
     for i in range(len(vals) // 2):
-        result.append({"idx": i, "label": int(vals[i*2+0] > vals[i*2+1])})
+        result.append({"idx": i, "label": int(vals[i*2+0] < vals[i*2+1])})
     return result
 
 

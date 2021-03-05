@@ -332,7 +332,7 @@ def to_translate(data):
 
 
 data_funs = (read_lidirus, read_rcb, read_parus,  # read_parus_nonnli,
-             read_muserc, read_terra, read_russe, read_rwsd, read_danetqa,  read_rucos_nli,  read_rucos
+             read_muserc, read_terra, read_russe, read_rwsd, read_danetqa, # read_rucos_nli,  read_rucos
              )
 translation_path = "translations/translation.json"
 dont_process = ()  # data_funs  # (read_danetqa, read_terra, read_lidirus)
