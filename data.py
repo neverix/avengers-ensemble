@@ -287,7 +287,8 @@ mapping = {
     read_parus: "copa",
     read_muserc: "multirc",
     read_terra: "rte",
-    read_russe: "wic"
+    read_russe: "wic",
+    read_rwsd: "wsd"
 }
 
 
@@ -416,7 +417,7 @@ if __name__ == '__main__':
     # make_df([read_rucos], is_pkl=True, translate=True)
     # exit()
     datas = [  # read_danetqa, read_rcb, read_parus, read_muserc, read_terra,
-             read_russe]
+             read_russe, read_rwsd]
     for d in [datas] + [[d] for d in datas]:
         make_df(d, is_tsv=True,  # translate=True
                 )

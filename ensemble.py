@@ -61,6 +61,11 @@ def read_split(datasets, model, split):
     assert comb is not None
     # print("Solved!")
     funs = [fn for fn in data.data_funs if fn in comb]
+    # hack
+    if model.startswith("xlm/anli"):
+        # The models trained on all datasets do worse on each of them,
+        # but the sample-limited RWSD benefits from the extra data
+        funs = [data.read_rwsd]
 
     results = {}
     for fn in funs:
@@ -119,10 +124,11 @@ def process_muserc(_dataset, preds, _probs):
 
 
 def process_rwsd(_dataset, preds, _probs):
-    return [{"idx": k, "label": [False, True][int(v)]} for k, v in preds.items()]
+    return [{"idx": int(k), "label": [False, True][int(v)]} for k, v in preds.items()]
 
 
-models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb", "zero-norm/super",
+models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/anli-rcb",
+          "zero-norm/super",
           "zero-norm/super-rcb", "silver/silver", "golden/1", "golden/2", "golden/3", "golden/4",
           "zero-norm/super-qa", "golden/danetqa", "golden/danetqa-better", "zero-norm/super-proc", "qa/en-azero",
           "golden/danetqa-5000", "platinum/1", "zero56/zero", "platinum/1-fp", "platinum/1r", "platinum/1rs",
@@ -147,6 +153,7 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           # "new-rob-large/roblexp3_rte",  # "new-rob-large/roblexp2_rte",  # "new-rob-large/roblexp_rte",
           # "new-rob-large/roblexp6_rte", "new-rob-large/roblexp5_rte", "new-rob-large/roblexp4_rte",
           # "new-rob-large/roblexp9_rte", "new-rob-large/roblexp8_rte", "new-rob-large/roblexp7_rte",  #
+          "new-rob-large/xwl_wic", "new-rob-large/xwl_wsd"
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
@@ -314,7 +321,7 @@ def build_model(dataset, feats, fn):
                 top.append((c, a, b))
     top.sort()
     allowed = corr.columns.tolist()
-    while True:
+    while True and top:
         score, a, b = top.pop()
         if score < corr_thresh:
             break
