@@ -81,7 +81,7 @@ def process_terra(_dataset, preds, _probs):
 
 
 def process_lidirus(_dataset, preds, _probs):
-    return [{"idx": k, "label": ["not_entailment", "entailment"][int(v)]} for k, v in preds.items()]
+    return [{"idx": int(k), "label": ["not_entailment", "entailment"][int(v)]} for k, v in preds.items()]
 
 
 def process_rcb(_dataset, preds, _probs):
