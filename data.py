@@ -113,6 +113,7 @@ def read_terra(split):
 
 
 def preprocess_russe(data):
+    a, l = 0, 0
     for sample in data:
         misc = utils.Map()
         for key in list(sample.keys()):
@@ -121,6 +122,9 @@ def preprocess_russe(data):
         sample.misc = misc
         sample.label = int(sample.label is True)
         yield sample.idx, sample
+        a += sample.label
+        l += 1
+    # print(a, l, a/l)
 
 
 def read_russe(split):
@@ -282,7 +286,8 @@ mapping = {
     read_rcb: "cb",
     read_parus: "copa",
     read_muserc: "multirc",
-    read_terra: "rte"
+    read_terra: "rte",
+    read_russe: "wic"
 }
 
 
@@ -342,7 +347,7 @@ def load_all(tasks=data_funs, *args, **kwargs):
     return load_all_real([f.__name__ for f in tasks], *args, **kwargs)
 
 
-@cache.mem.cache
+# @cache.mem.cache
 def load_all_real(tasks, verbose=False, translate=False):
     #3234956
     splits = {}
@@ -402,17 +407,23 @@ def make_df(tasks, is_tsv=False, is_pkl=False, source_only=False, **kwargs):
         if is_pkl:
             df.to_pickle(name, protocol=4)
         else:
+            # print(name)
             df.to_csv(name, header=False, index=False, **(tsv_params if is_tsv else {}))
 
 
 if __name__ == '__main__':
     # make_df([read_rucos_nli], is_pkl=True)
-    make_df([read_rucos], is_pkl=True, translate=True)
-    exit()
-    datas = [read_danetqa, read_rucos, read_rcb, read_parus, read_muserc, read_terra]
-    make_df(datas, is_tsv=True, translate=True)
-    make_df(datas, is_pkl=True, translate=True,)
-    make_df(datas, source_only=True, is_tsv=True, translate=True)
+    # make_df([read_rucos], is_pkl=True, translate=True)
+    # exit()
+    datas = [  # read_danetqa, read_rcb, read_parus, read_muserc, read_terra,
+             read_russe]
+    for d in [datas] + [[d] for d in datas]:
+        make_df(d, is_tsv=True,  # translate=True
+                )
+        make_df(d, is_pkl=True,  # translate=True,
+                )
+        make_df(d, source_only=True, is_tsv=True,  # translate=True
+                )
     exit()
     # make_df([read_danetqa, read_muserc], is_tsv=True, translate=True)
     # make_df([read_danetqa, read_muserc], is_tsv=True, source_only=True, translate=True)
@@ -441,4 +452,3 @@ if __name__ == '__main__':
     # print(list(read_split("mbert/mbert", "test")[read_rcb].values())[:10])
     make_df([read_rcb])
     make_df([read_terra])
-    make_df(data_funs)

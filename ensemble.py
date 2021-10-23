@@ -1,6 +1,8 @@
+import sys
+
 import data
 import pandas as pd
-from autogluon.tabular import TabularPrediction as task
+from autogluon.tabular import TabularPredictor, TabularDataset
 import utils
 import shutil
 import ast
@@ -30,7 +32,22 @@ def subset_sum(dct, target):
 
 
 def read_split(datasets, model, split):
-    lines = list(map(ast.literal_eval, open(f"scores/{model}.{split}.scores")))
+    scores_file = f"scores/{model}.{split}.scores"
+    if split == "val":
+        try:
+            open(scores_file)
+        except FileNotFoundError:
+            split = "dev"
+            scores_file = f"scores/{model}.{split}.scores"
+    lines = list(open(scores_file))
+    result = []
+    for line in lines:
+        line = line.strip()
+        try:
+            result.append(ast.literal_eval(line))
+        except (SyntaxError, ValueError) as e:
+            result.append(tuple(map(float, line.split())))
+    lines = result
     lines = [x if isinstance(x, tuple) else (x,) for x in lines]
 
     length = len(lines)
@@ -74,7 +91,7 @@ def process_parus(_dataset, _preds, probs):
     vals = list(probs.values())
     result = []
     for i in range(len(vals) // 2):
-        result.append({"idx": i, "label": int(vals[i*2+0] < vals[i*2+1])})
+        result.append({"idx": i, "label": int(vals[i*2+0] > vals[i*2+1])})
     return result
 
 
@@ -126,7 +143,10 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "process/noq-small", "process/noq-base", "process/noq-large", "process/noq-3B",
           "process/bcq-small", "process/bcq-base", "process/bcq-large", "process/bcq-3B",
           "11/11-longer", "11/11-longest", "11/11-longerest", "11/11a-f", "11/11-f",
-          "11/11a-long", "11/11a-longer"
+          "11/11a-long", "11/11a-longer",
+          # "new-rob-large/roblexp3_rte",  # "new-rob-large/roblexp2_rte",  # "new-rob-large/roblexp_rte",
+          # "new-rob-large/roblexp6_rte", "new-rob-large/roblexp5_rte", "new-rob-large/roblexp4_rte",
+          # "new-rob-large/roblexp9_rte", "new-rob-large/roblexp8_rte", "new-rob-large/roblexp7_rte",  #
           ]
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
@@ -158,7 +178,10 @@ def make_feats(dataset):
     for split in ("val", "test"):
         datasets = {fn: fn(split) for fn in data.data_funs}
         for model in models:
-            preds[(model, split)] = read_split(datasets, model, split)
+            try:
+                preds[(model, split)] = read_split(datasets, model, split)
+            except FileNotFoundError as e:
+                print(e, file=sys.stderr)
     print("Got features.")
 
     splits, source = dataset
@@ -169,6 +192,8 @@ def make_feats(dataset):
             data1, data2, data3 = source[(fn.__name__, split)]
             results = {key: {} for key in data2}
             for model in models:
+                if (model, split) not in preds:
+                    continue
                 result = preds[(model, split)]
                 if fn not in result:
                     continue
@@ -193,12 +218,13 @@ def ensemble_predictions(train, splits, metric, feats=None):
     if feats is None:
         feats = list(x.columns)
 
-    '''
     x = x[feats]
     x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=56, shuffle=False, test_size=0.3)
 
     og_splits = copy.deepcopy(splits)
     for split in splits:
+        if "label" not in feats:
+            feats.append("label")
         x, y = x_y(splits[split])
         x["label"] = y
         splits[split] = x[feats]
@@ -232,18 +258,25 @@ def ensemble_predictions(train, splits, metric, feats=None):
             probs = probs[:, :1]
         predictions_ensemble[name] = dict(zip(split.keys(), [int(x) for x in classes])), dict(zip(split.keys(), [tuple(map(float, x)) for x in probs]))
     return predictions_ensemble
-    '''
+
+
+def ensemble_predictions_ag(train, splits, metric, feats=None):
+    x, y = x_y(train)
+    if feats is None:
+        feats = list(x.columns)
 
     print("Training...")
     x = x[feats]
     x["label"] = y
-    train_data = task.Dataset(x)
-    predictor = task.fit(presets="best_quality", train_data=train_data, eval_metric=metric, label="label", hyperparameters={'GBM': {}, 'CAT': dict(
-        eval_metric=dict(
-            f1="F1",
-            mcc="MCC",
-            acc="Accuracy"
-        )[metric]
+    train_data = TabularDataset(x)  # task.Dataset(x)
+    eval_metric = dict(
+        f1="F1",
+        mcc="MCC",
+        acc="Accuracy"
+    )[metric]
+    predictor = TabularPredictor(label="label", eval_metric=metric) \
+        .fit(presets="best_quality", train_data=train_data, hyperparameters={'GBM': {}, 'CAT': dict(
+        eval_metric=eval_metric
     ), 'RF': {}})
     print("Computing...")
     predictions_ensemble = {}
@@ -253,11 +286,16 @@ def ensemble_predictions(train, splits, metric, feats=None):
         # model_predictions = [model[name] * weight for (_, model, *_), weight in zip(models, weights)]
         # predictions = [float(sum([x[1] if len(x) > 1 else x[0] for x in preds])) for preds in zip(*model_predictions)]
         y_pred = predictor.predict(feats)
-        y_prob = [float(x) if x.size < 2 else [float(y) for y in x] for x in predictor.predict_proba(feats)]
+        y_prob = [float(x) if (isinstance(x, int) or isinstance(x, float) or x.size < 2)
+                  else [float(y) for y in x]
+                  for x in predictor.predict_proba(feats)]
         if split == "val":
             print(predictor.evaluate_predictions(y_true=y_true, y_pred=y_pred, auxiliary_metrics=True))
         predictions_ensemble[name] = dict(zip(split.keys(), y_pred)), dict(zip(split.keys(), y_prob))
     return predictions_ensemble
+
+
+# ensemble_predictions = ensemble_predictions_ag
 
 
 def build_model(dataset, feats, fn):

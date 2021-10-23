@@ -15,6 +15,8 @@ lightning_logs/
 models/
 catboost_info/
 *.json
+*.ipynb
+venv*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

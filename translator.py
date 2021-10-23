@@ -7,7 +7,7 @@ import time
 import shutil
 
 
-def translate(lines, translations=None, char_limit=50_000, tor_port=9050, cnt_port=9051, cb=lambda x: None):
+def translate(lines, translations=None, char_limit=50_000, tor_port=9052, cnt_port=9051, cb=lambda x: None):
     if translations is None:
         translations = {}
     translations[''] = ''

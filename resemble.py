@@ -97,6 +97,7 @@ def x_y(feats):
     return feats.drop(columns=["label"]), feats["label"]
 
 
+@mem.cache
 def fit_one(model, x, y, x_test, y_test, splits, metric, params, init_params, kwargs, *args, **kw):
     sampled = list(ParameterSampler(params, 1, random_state=np.random.RandomState(random.randint(0, 100))))[0]
     mod = model(**init_params, **sampled)
