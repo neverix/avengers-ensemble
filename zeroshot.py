@@ -1,3 +1,4 @@
+import os
 import re
 from tqdm import tqdm
 from nltk.tokenize import RegexpTokenizer
@@ -38,15 +39,15 @@ def process_muserc(sample):
 
 tokenizer = RegexpTokenizer(r'\d+[ ]+\d+[ ]+\d+|\d+[ ]+\d+|[a-zA-Z]+[.]+[a-zA-Z]+|[A-Z]+[a-z]+|\d+[.,:+-]+\d+|\w+')
 processors = {
-    data.read_danetqa: process_danetqa,
+    # data.read_danetqa: process_danetqa,
     # data.read_terra: process_terra,
     # data.read_lidirus: process_lidirus,
     # data.read_rcb: process_rcb,
-    # data.read_russe: process_russe,
-    data.read_muserc: process_muserc,
-    data.read_parus: process_parus,
+    data.read_russe: process_russe,
+    # data.read_muserc: process_muserc,
+    # data.read_parus: process_parus,
 }
-name = "zero-norm/super-plus"
+name = "how-about-we-name-this-normally-for-once/mdeberta-v3-base-xnli-test1"  # "zero-norm/super-plus"
 
 
 def preprocess_word(word):
@@ -69,13 +70,14 @@ def make_preds_zero_shot(model, dataset, split):
     processor = processors[dataset]
     for k, v in sorted(datas.items()):
         premise, hypothesis_template, hypotheses = processor(v)
-        preds = model(premise, hypotheses, multi_class=False, hypothesis_template=hypothesis_template)
+        preds = model(premise, hypotheses, multi_label=False, hypothesis_template=hypothesis_template)
         yield tuple(preds["scores"])
 
 
 def main():
     print("loading model")
-    classifier = pipeline("zero-shot-classification", model="vicgalle/xlm-roberta-large-xnli-anli", device=0)
+    # classifier = pipeline("zero-shot-classification", model="vicgalle/xlm-roberta-large-xnli-anli", device=0)
+    classifier = pipeline("zero-shot-classification", model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli", device=0)
     print("model loaded")
     for split in ("val", "test"):
         print("processing", split)
@@ -87,6 +89,7 @@ def main():
                 for pred in tqdm(preds, total=len(dataset(split))):
                     results.append(pred)
         print(" writing")
+        os.makedirs(f"scores/{os.path.dirname(name)}", exist_ok=True)
         open(f"scores/{name}.{split}.scores", 'w').write('\n'.join(str(p) for p in results))
 
 

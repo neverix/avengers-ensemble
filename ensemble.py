@@ -153,7 +153,8 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           # "new-rob-large/roblexp3_rte",  # "new-rob-large/roblexp2_rte",  # "new-rob-large/roblexp_rte",
           # "new-rob-large/roblexp6_rte", "new-rob-large/roblexp5_rte", "new-rob-large/roblexp4_rte",
           # "new-rob-large/roblexp9_rte", "new-rob-large/roblexp8_rte", "new-rob-large/roblexp7_rte",  #
-          "new-rob-large/xwl_wic", "new-rob-large/xwl_wsd"
+          "new-rob-large/xwl_wic", "new-rob-large/xwl_wsd",
+          "how-about-we-name-this-normally-for-once/mdeberta-v3-base-xnli-test1"
           ]
 print("Model count:", len(models))
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
@@ -362,6 +363,7 @@ if __name__ == '__main__':
     feats = make_feats(dataset)
     print("Features done, finding best...")
 
+    datasets = {k: v for k, v in datasets.items() if v[1] == "RUSSE"}
     for fn in datasets:
         print(datasets[fn][1])
         val_df = feats[fn]["val"]
