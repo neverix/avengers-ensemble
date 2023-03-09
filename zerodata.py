@@ -25,8 +25,8 @@ def process_parus(sample):
 
 
 def process_russe(sample):
-    return get_words(sample["sentence1"]), f"слово {sample['word']} применяется в том же смысле {'{}'}",\
-           (get_words(sample["sentence2"]),)
+    return (get_words(sample["sentence1"]), f"слово {sample['word']} применяется в том же смысле {'{}'}",\
+            get_words(sample["sentence2"]), sample["label"])
 
 
 def process_danetqa(sample):
@@ -68,33 +68,27 @@ def make_dataset_zero_shot(dataset, split):
     # datas = data.preprocess_dataset(datas)
     processor = processors[dataset]
     for k, v in sorted(datas.items()):
-        premise, hypothesis_template, hypotheses = processor(v)
-        yield premise, hypothesis_template, hypotheses
-
-
-def make_preds_zero_shot(model, dataset, split):
-    for premise, hypothesis_template, hypotheses in make_dataset_zero_shot(dataset, split):
-        preds = model(premise, hypotheses, multi_label=False, hypothesis_template=hypothesis_template)
-        yield tuple(preds["scores"])
+        premise, hypothesis_template, hypotheses, label = processor(v)
+        yield premise, hypothesis_template, hypotheses, label
 
 
 def main():
     print("loading model")
     # classifier = pipeline("zero-shot-classification", model="vicgalle/xlm-roberta-large-xnli-anli", device=0)
-    classifier = pipeline("zero-shot-classification", model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli", device=0)
+    # classifier = pipeline("zero-shot-classification", model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli", device=0)
     print("model loaded")
-    for split in ("val", "test"):
+    for split in ("train", "val", "test"):
         print("processing", split)
         results = []
         for dataset in data.data_funs:
             if dataset in processors:
                 print(" computing", dataset.__name__)
-                preds = make_preds_zero_shot(classifier, dataset, split)
-                for pred in tqdm(preds, total=len(dataset(split))):
-                    results.append(pred)
+                results.extend([(premise + " " + hypothesis_template.format(hypothesis), label)
+                                for premise, hypothesis_template, hypotheses, label in make_dataset_zero_shot(dataset, split)
+                                for hypothesis in hypotheses])
         print(" writing")
-        os.makedirs(f"scores/{os.path.dirname(name)}", exist_ok=True)
-        open(f"scores/{name}.{split}.scores", 'w').write('\n'.join(str(p) for p in results))
+        os.makedirs(f"datasets/{os.path.dirname(name)}", exist_ok=True)
+        open(f"datasets/{name}.{split}.csv", 'w').write('\n'.join(','.join(map(str, p)) for p in results))
 
 
 if __name__ == '__main__':
