@@ -1,7 +1,8 @@
-import urllib.request
-import os
-import shutil
+import requests
 import zipfile
+import shutil
+import os
+import io
 
 
 out_path = "datasets"
@@ -9,12 +10,13 @@ out_path = "datasets"
 
 def main():
     print("Downloading...")
-    file, _ = urllib.request.urlretrieve("https://russiansuperglue.com/tasks/download")
+    response = requests.get("https://russiansuperglue.com/tasks/download", verify=False)
     print("Extracting...")
-    zip_file = zipfile.ZipFile(file)
+    zip_file = zipfile.ZipFile(io.BytesIO(response.content))
     zip_file.extractall('.')
     shutil.rmtree("__MACOSX")
-    shutil.rmtree(out_path)
+    if os.path.exists(out_path):
+        shutil.rmtree(out_path)
     os.rename("combined", out_path)
     print("Done!")
 
