@@ -156,12 +156,12 @@ models = ["xlm/anli", "xlm/anli-terra", "xlm/anli-all", "xlm/anli-all-x", "xlm/a
           "new-rob-large/xwl_wic", "new-rob-large/xwl_wsd",
           "how-about-we-name-this-normally-for-once/mdeberta-v3-base-xnli-test1",
           ]
-print("Model count:", len(models))
 for step in ["1001200", "1003000", "1004800", "1006000", "1007800", "1010800", "1013200", "1016800", "1019200"][-1:]:
     models.append(f"all/all-{step}")
 files = set(x.split('.')[0] for x in os.listdir("scores/all-step"))
 for file in files:
     models.append(f"all-step/{file}")
+print("Model count:", len(models))
 datasets = {
     data.read_muserc: (process_muserc, "MuSeRC", "f1"),
     data.read_danetqa: (process_danetqa, "DaNetQA", "acc"),
@@ -373,7 +373,8 @@ if __name__ == '__main__':
         for score, c in feat:
             print(f" {c}: {score}")
     # exit()
-
+    
+    os.makedirs("outputs", exist_ok=True)
     for fn, (processor, name, *_) in datasets.items():
         print(f"Training {name}...")
         preds = build_model(dataset, feats, fn)
