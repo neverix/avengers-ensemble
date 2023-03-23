@@ -25,8 +25,8 @@ def process_parus(sample):
 
 
 def process_russe(sample):
-    return get_words(sample["sentence1"]), f"слово {sample['word']} применяется в том же смысле {'{}'}",\
-           (get_words(sample["sentence2"]),)
+    return (get_words(sample["sentence1"]), f" - слово {sample['word']} применяется в том же смысле {'{}'} - ",\
+            (get_words(sample["sentence2"]),), sample["label"])
 
 
 def process_danetqa(sample):
